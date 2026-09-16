@@ -1,0 +1,4 @@
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/model_rules",
+  "Mitsuha11zz/moonifc_inspector/packages/relation_map",
+}

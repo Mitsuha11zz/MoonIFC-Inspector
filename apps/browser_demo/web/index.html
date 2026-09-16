@@ -1,0 +1,8 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>MoonIFC Inspector</title>
+<style>body{font:16px system-ui;max-width:760px;margin:40px auto;padding:0 16px}pre{background:#f4f4f4;padding:16px}</style>
+<h1>MoonIFC Inspector</h1>
+<p>轻量 IFC STEP 结构审计 Demo。选择一个 <code>.ifc</code> 文件后，可在后续版本中接入 WASM 解析器。</p>
+<input type="file" accept=".ifc"><pre id="output">等待文件…</pre>
+<script>document.querySelector('input').onchange=e=>document.querySelector('#output').textContent='已选择 '+e.target.files[0].name+'；WASM 入口见 apps/browser_demo。'</script>

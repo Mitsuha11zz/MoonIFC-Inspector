@@ -1,0 +1,6 @@
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/model_rules",
+  "Mitsuha11zz/moonifc_inspector/packages/report_view",
+  "Mitsuha11zz/moonifc_inspector/packages/step_text",
+}
+pkgtype(kind: "executable")
