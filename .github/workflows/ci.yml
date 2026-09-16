@@ -1,13 +1,14 @@
 name: ci
 on: [push, pull_request]
 jobs:
-  moonbit:
+  step-text:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: moonbitlang/setup-moonbit@v1
-      - run: moon fmt --check
-      - run: moon info
-      - run: moon check --target all --deny-warn
-      - run: moon test --target all --deny-warn
-      - run: moon build --target wasm,wasm-gc,js,native
+      - uses: hustcer/setup-moonbit@v1
+      - run: moon version --all
+      - run: moon fmt --check packages/step_text
+      - run: moon info packages/step_text
+      - run: moon check packages/step_text --target all --deny-warn
+      - run: moon test packages/step_text --target all --deny-warn
+      - run: moon build packages/step_text --target wasm,wasm-gc,js,native

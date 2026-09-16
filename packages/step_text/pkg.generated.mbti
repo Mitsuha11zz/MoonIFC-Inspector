@@ -1,0 +1,78 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/packages/step_text"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn parse(String) -> Document
+
+// Errors
+
+// Types and methods
+pub struct Document {
+  entities : Array[EntityRecord]
+  header_present : Bool
+  data_present : Bool
+  errors : Array[ParseError]
+} derive(Eq, @debug.Debug)
+pub fn Document::data_present(Self) -> Bool
+pub fn Document::entities(Self) -> Array[EntityRecord]
+pub fn Document::errors(Self) -> Array[ParseError]
+pub fn Document::header_present(Self) -> Bool
+
+pub struct EntityRecord {
+  id : Int
+  kind : String
+  args : Array[Value]
+  location : SourceLoc
+} derive(Eq, @debug.Debug)
+pub fn EntityRecord::args(Self) -> Array[Value]
+pub fn EntityRecord::id(Self) -> Int
+pub fn EntityRecord::kind(Self) -> String
+pub fn EntityRecord::location(Self) -> SourceLoc
+
+pub struct ParseError {
+  kind : ParseErrorKind
+  message : String
+  location : SourceLoc
+} derive(Eq, @debug.Debug)
+pub fn ParseError::kind(Self) -> ParseErrorKind
+pub fn ParseError::location(Self) -> SourceLoc
+pub fn ParseError::message(Self) -> String
+
+pub(all) enum ParseErrorKind {
+  InvalidSection
+  InvalidEntity
+  InvalidValue
+  UnterminatedString
+  UnterminatedAggregate
+  DuplicateEntityId
+} derive(Eq, @debug.Debug)
+
+pub struct SourceLoc {
+  line : Int
+  column : Int
+  offset : Int
+} derive(Eq, @debug.Debug)
+pub fn SourceLoc::column(Self) -> Int
+pub fn SourceLoc::line(Self) -> Int
+pub fn SourceLoc::offset(Self) -> Int
+pub fn SourceLoc::to_string(Self) -> String
+
+pub(all) enum Value {
+  Integer(Int64)
+  Real(Double)
+  String(String)
+  Boolean(Bool)
+  Enum(String)
+  Reference(Int)
+  Aggregate(Array[Value])
+  Omitted
+  Derived
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
