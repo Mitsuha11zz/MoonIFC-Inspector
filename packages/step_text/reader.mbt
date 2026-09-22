@@ -31,7 +31,7 @@ fn location_after(
       column += 1
     }
   }
-  { line, column, offset: base.offset() + end }
+  { line, column, offset: base.offset() + end, }
 }
 
 ///|
@@ -40,7 +40,7 @@ fn error(
   message : String,
   location : SourceLoc,
 ) -> ParseError {
-  { kind, message, location }
+  { kind, message, location, }
 }
 
 ///|
@@ -418,7 +418,7 @@ fn parse_entity(
       ),
     )
   }
-  Ok({ id, kind, args, location: base })
+  Ok({ id, kind, args, location: base, })
 }
 
 ///|
@@ -465,7 +465,7 @@ pub fn parse(source : String) -> Document {
   let seen : Array[Int] = []
   let chars = source.to_array()
   let mut statement : Array[Char] = []
-  let mut statement_location = { line: 1, column: 1, offset: 0 }
+  let mut statement_location = { line: 1, column: 1, offset: 0, }
   let mut line = 1
   let mut column = 1
   let mut offset = 0
@@ -481,7 +481,7 @@ pub fn parse(source : String) -> Document {
       offset += 1
     } else {
       if statement.length() == 0 {
-        statement_location = { line, column, offset }
+        statement_location = { line, column, offset, }
       }
       statement.push(ch)
       if ch == '\'' {
@@ -550,5 +550,5 @@ pub fn parse(source : String) -> Document {
     }
     errors.push(error(kind, message, statement_location))
   }
-  { entities, header_present, data_present, errors }
+  { entities, header_present, data_present, errors, }
 }

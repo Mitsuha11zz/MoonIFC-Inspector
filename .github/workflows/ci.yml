@@ -6,8 +6,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: hustcer/setup-moonbit@v1
-        with:
-          version: 0.1.20260824+dae026a
       - run: moon version --all
       - run: moon fmt --check packages/step_text
       - run: moon info packages/step_text
