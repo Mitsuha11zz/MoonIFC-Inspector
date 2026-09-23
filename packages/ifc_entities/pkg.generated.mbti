@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/packages/ifc_entities"
+
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/step_text",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn build(@step_text.Document) -> Array[Entity]
+
+pub fn classify(String) -> EntityClass
+
+pub fn from_record(@step_text.EntityRecord) -> Entity
+
+pub fn is_supported(String) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct Entity {
+  id : Int
+  kind : String
+  args : Array[@step_text.Value]
+  references : Array[Int]
+  global_id : String?
+  location : @step_text.SourceLoc
+} derive(Eq, @debug.Debug)
+pub fn Entity::args(Self) -> Array[@step_text.Value]
+pub fn Entity::category(Self) -> EntityClass
+pub fn Entity::equal(Self, Self) -> Bool
+pub fn Entity::global_id(Self) -> String?
+pub fn Entity::id(Self) -> Int
+pub fn Entity::kind(Self) -> String
+pub fn Entity::location(Self) -> @step_text.SourceLoc
+pub fn Entity::not_equal(Self, Self) -> Bool
+pub fn Entity::references(Self) -> Array[Int]
+pub fn Entity::to_repr(Self) -> @debug.Repr
+
+pub(all) enum EntityClass {
+  Project
+  Spatial
+  Element
+  Relationship
+  Unsupported
+} derive(Eq, @debug.Debug)
+pub fn EntityClass::equal(Self, Self) -> Bool
+pub fn EntityClass::not_equal(Self, Self) -> Bool
+pub fn EntityClass::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

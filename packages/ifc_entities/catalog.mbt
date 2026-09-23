@@ -1,9 +1,34 @@
 ///|
-pub fn is_supported(kind : String) -> Bool {
-  match kind {
-    "IFCPROJECT" | "IFCSITE" | "IFCBUILDING" | "IFCBUILDINGSTOREY" | "IFCSPACE" | "IFCWALL" | "IFCDOOR" | "IFCWINDOW" | "IFCRELAGGREGATES" | "IFCRELCONTAINEDINSPATIALSTRUCTURE" | "IFCRELDEFINESBYPROPERTIES" => true
-    _ => false
+pub(all) enum EntityClass {
+  Project
+  Spatial
+  Element
+  Relationship
+  Unsupported
+} derive(Eq, Debug)
+
+///|
+pub extend EntityClass with Eq::{not_equal, equal}
+
+///|
+pub extend EntityClass with Debug::{to_repr}
+
+///|
+pub fn classify(kind : String) -> EntityClass {
+  match kind.to_upper() {
+    "IFCPROJECT" => Project
+    "IFCSITE" | "IFCBUILDING" | "IFCBUILDINGSTOREY" | "IFCSPACE" => Spatial
+    "IFCWALL" | "IFCDOOR" | "IFCWINDOW" => Element
+    "IFCRELAGGREGATES"
+    | "IFCRELCONTAINEDINSPATIALSTRUCTURE"
+    | "IFCRELDEFINESBYPROPERTIES" => Relationship
+    _ => Unsupported
   }
+}
+
+///|
+pub fn is_supported(kind : String) -> Bool {
+  classify(kind) != Unsupported
 }
 
 ///|
