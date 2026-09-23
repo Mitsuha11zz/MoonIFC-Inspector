@@ -1,0 +1,32 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/packages/relation_map"
+
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/ifc_entities",
+}
+
+// Values
+pub fn build(Array[@ifc_entities.Entity]) -> RelationMap
+
+// Errors
+
+// Types and methods
+pub struct RelationMap {
+  entities : Array[@ifc_entities.Entity]
+  by_id : Map[Int, @ifc_entities.Entity]
+  by_type : Map[String, Array[@ifc_entities.Entity]]
+  incoming : Map[Int, Array[Int]]
+  children : Map[Int, Array[Int]]
+  parents : Map[Int, Int]
+}
+pub fn RelationMap::children_of(Self, Int) -> Array[Int]
+pub fn RelationMap::entities(Self) -> Array[@ifc_entities.Entity]
+pub fn RelationMap::entities_by_type(Self, String) -> Array[@ifc_entities.Entity]
+pub fn RelationMap::entity_by_id(Self, Int) -> @ifc_entities.Entity?
+pub fn RelationMap::incoming_references(Self, Int) -> Array[Int]
+pub fn RelationMap::outgoing_references(Self, Int) -> Array[Int]
+pub fn RelationMap::parent_of(Self, Int) -> Int?
+
+// Type aliases
+
+// Traits
