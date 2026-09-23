@@ -19,8 +19,11 @@ pub struct Document {
 } derive(Eq, @debug.Debug)
 pub fn Document::data_present(Self) -> Bool
 pub fn Document::entities(Self) -> Array[EntityRecord]
+pub fn Document::equal(Self, Self) -> Bool
 pub fn Document::errors(Self) -> Array[ParseError]
 pub fn Document::header_present(Self) -> Bool
+pub fn Document::not_equal(Self, Self) -> Bool
+pub fn Document::to_repr(Self) -> @debug.Repr
 
 pub struct EntityRecord {
   id : Int
@@ -29,18 +32,24 @@ pub struct EntityRecord {
   location : SourceLoc
 } derive(Eq, @debug.Debug)
 pub fn EntityRecord::args(Self) -> Array[Value]
+pub fn EntityRecord::equal(Self, Self) -> Bool
 pub fn EntityRecord::id(Self) -> Int
 pub fn EntityRecord::kind(Self) -> String
 pub fn EntityRecord::location(Self) -> SourceLoc
+pub fn EntityRecord::not_equal(Self, Self) -> Bool
+pub fn EntityRecord::to_repr(Self) -> @debug.Repr
 
 pub struct ParseError {
   kind : ParseErrorKind
   message : String
   location : SourceLoc
 } derive(Eq, @debug.Debug)
+pub fn ParseError::equal(Self, Self) -> Bool
 pub fn ParseError::kind(Self) -> ParseErrorKind
 pub fn ParseError::location(Self) -> SourceLoc
 pub fn ParseError::message(Self) -> String
+pub fn ParseError::not_equal(Self, Self) -> Bool
+pub fn ParseError::to_repr(Self) -> @debug.Repr
 
 pub(all) enum ParseErrorKind {
   InvalidSection
@@ -50,6 +59,9 @@ pub(all) enum ParseErrorKind {
   UnterminatedAggregate
   DuplicateEntityId
 } derive(Eq, @debug.Debug)
+pub fn ParseErrorKind::equal(Self, Self) -> Bool
+pub fn ParseErrorKind::not_equal(Self, Self) -> Bool
+pub fn ParseErrorKind::to_repr(Self) -> @debug.Repr
 
 pub struct SourceLoc {
   line : Int
@@ -57,8 +69,11 @@ pub struct SourceLoc {
   offset : Int
 } derive(Eq, @debug.Debug)
 pub fn SourceLoc::column(Self) -> Int
+pub fn SourceLoc::equal(Self, Self) -> Bool
 pub fn SourceLoc::line(Self) -> Int
+pub fn SourceLoc::not_equal(Self, Self) -> Bool
 pub fn SourceLoc::offset(Self) -> Int
+pub fn SourceLoc::to_repr(Self) -> @debug.Repr
 pub fn SourceLoc::to_string(Self) -> String
 
 pub(all) enum Value {
@@ -72,6 +87,9 @@ pub(all) enum Value {
   Omitted
   Derived
 } derive(Eq, @debug.Debug)
+pub fn Value::equal(Self, Self) -> Bool
+pub fn Value::not_equal(Self, Self) -> Bool
+pub fn Value::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

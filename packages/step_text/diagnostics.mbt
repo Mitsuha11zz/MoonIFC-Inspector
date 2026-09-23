@@ -6,6 +6,12 @@ pub struct SourceLoc {
 } derive(Eq, Debug)
 
 ///|
+pub extend SourceLoc with Eq::{not_equal, equal}
+
+///|
+pub extend SourceLoc with Debug::{to_repr}
+
+///|
 pub(all) enum ParseErrorKind {
   InvalidSection
   InvalidEntity
@@ -16,11 +22,23 @@ pub(all) enum ParseErrorKind {
 } derive(Eq, Debug)
 
 ///|
+pub extend ParseErrorKind with Eq::{not_equal, equal}
+
+///|
+pub extend ParseErrorKind with Debug::{to_repr}
+
+///|
 pub struct ParseError {
   kind : ParseErrorKind
   message : String
   location : SourceLoc
 } derive(Eq, Debug)
+
+///|
+pub extend ParseError with Eq::{not_equal, equal}
+
+///|
+pub extend ParseError with Debug::{to_repr}
 
 ///|
 pub fn ParseError::kind(self : ParseError) -> ParseErrorKind {

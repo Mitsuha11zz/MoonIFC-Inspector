@@ -12,6 +12,12 @@ pub(all) enum Value {
 } derive(Eq, Debug)
 
 ///|
+pub extend Value with Eq::{not_equal, equal}
+
+///|
+pub extend Value with Debug::{to_repr}
+
+///|
 pub struct EntityRecord {
   id : Int
   kind : String
@@ -20,12 +26,24 @@ pub struct EntityRecord {
 } derive(Eq, Debug)
 
 ///|
+pub extend EntityRecord with Eq::{not_equal, equal}
+
+///|
+pub extend EntityRecord with Debug::{to_repr}
+
+///|
 pub struct Document {
   entities : Array[EntityRecord]
   header_present : Bool
   data_present : Bool
   errors : Array[ParseError]
 } derive(Eq, Debug)
+
+///|
+pub extend Document with Eq::{not_equal, equal}
+
+///|
+pub extend Document with Debug::{to_repr}
 
 ///|
 pub fn EntityRecord::id(self : EntityRecord) -> Int {

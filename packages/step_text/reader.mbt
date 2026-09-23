@@ -442,7 +442,7 @@ fn classify_statement(statement : String, base : SourceLoc) -> StatementResult {
   }
   if trimmed.has_prefix("#") {
     let without_semicolon = if trimmed.has_suffix(";") {
-      trimmed.sub(end=trimmed.length() - 1).to_owned()
+      trimmed[:trimmed.length() - 1].to_owned()
     } else {
       trimmed
     }
