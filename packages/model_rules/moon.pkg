@@ -1,4 +1,8 @@
 import {
-  "Mitsuha11zz/moonifc_inspector/packages/ifc_entities",
   "Mitsuha11zz/moonifc_inspector/packages/relation_map",
+  "Mitsuha11zz/moonifc_inspector/packages/step_text",
 }
+
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/ifc_entities",
+} for "test"

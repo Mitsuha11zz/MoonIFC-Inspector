@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/packages/model_rules"
+
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/relation_map",
+  "Mitsuha11zz/moonifc_inspector/packages/step_text",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn audit(@relation_map.RelationMap) -> AuditReport
+
+// Errors
+
+// Types and methods
+pub struct AuditReport {
+  findings : Array[Finding]
+  entity_count : Int
+  type_count : Int
+  reference_count : Int
+} derive(Eq, @debug.Debug)
+pub fn AuditReport::entity_count(Self) -> Int
+pub fn AuditReport::equal(Self, Self) -> Bool
+pub fn AuditReport::findings(Self) -> Array[Finding]
+pub fn AuditReport::not_equal(Self, Self) -> Bool
+pub fn AuditReport::reference_count(Self) -> Int
+pub fn AuditReport::to_repr(Self) -> @debug.Repr
+pub fn AuditReport::type_count(Self) -> Int
+
+pub struct Finding {
+  code : String
+  severity : Severity
+  entity_id : Int?
+  entity_type : String?
+  location : @step_text.SourceLoc?
+  target_id : Int?
+  message : String
+  suggestion : String?
+} derive(Eq, @debug.Debug)
+pub fn Finding::code(Self) -> String
+pub fn Finding::entity_id(Self) -> Int?
+pub fn Finding::entity_type(Self) -> String?
+pub fn Finding::equal(Self, Self) -> Bool
+pub fn Finding::location(Self) -> @step_text.SourceLoc?
+pub fn Finding::message(Self) -> String
+pub fn Finding::not_equal(Self, Self) -> Bool
+pub fn Finding::severity(Self) -> Severity
+pub fn Finding::suggestion(Self) -> String?
+pub fn Finding::target_id(Self) -> Int?
+pub fn Finding::to_repr(Self) -> @debug.Repr
+
+pub(all) enum Severity {
+  Error
+  Warning
+  Info
+} derive(Eq, @debug.Debug)
+pub fn Severity::equal(Self, Self) -> Bool
+pub fn Severity::not_equal(Self, Self) -> Bool
+pub fn Severity::to_repr(Self) -> @debug.Repr
+pub fn Severity::to_string(Self) -> String
+
+// Type aliases
+
+// Traits
