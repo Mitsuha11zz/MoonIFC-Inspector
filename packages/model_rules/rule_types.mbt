@@ -49,6 +49,8 @@ pub fn Finding::location(self : Finding) -> @step_text.SourceLoc? {
 }
 
 ///|
+/// Return the rule-specific related entity ID. REF001 uses the missing
+/// reference target; GID001 uses the first owner of the duplicated GlobalId.
 pub fn Finding::target_id(self : Finding) -> Int? {
   self.target_id
 }

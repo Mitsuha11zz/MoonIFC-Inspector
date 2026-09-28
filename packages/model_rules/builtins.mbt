@@ -1,5 +1,6 @@
 ///|
-/// Run REF001 only. Findings follow entity source order, then first reference order.
+/// Run built-in rules in stable rule order. Findings within each rule follow
+/// entity source order, then the rule-specific value order.
 /// Parser diagnostics are not merged into this report.
 pub fn audit(map : @relation_map.RelationMap) -> AuditReport {
   let entities = map.entities()
@@ -27,6 +28,7 @@ pub fn audit(map : @relation_map.RelationMap) -> AuditReport {
       }
     }
   }
+  check_duplicate_global_ids(entities, findings)
   {
     findings,
     entity_count: entities.length(),

@@ -17,6 +17,8 @@ moon run apps/browser_demo
 
 支持 HEADER/DATA 区段、实体编号、字符串、整数、浮点数、布尔值、枚举、引用、嵌套聚合以及 `$`/`*` 缺省值。支持的实体清单和已知限制见 [docs/supported-ifc.md](docs/supported-ifc.md)。
 
+当前审计支持悬空引用检查 `REF001` 和重复 `GlobalId` 检查 `GID001`，结果顺序稳定，并保留实体位置与规则相关实体编号。
+
 ## 许可证
 
 Apache-2.0
