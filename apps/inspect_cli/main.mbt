@@ -19,11 +19,13 @@ fn usage() -> String {
   "  --tree     print the entity reference list\n" +
   "  --spatial-tree  print the indented spatial hierarchy\n" +
   "  --federation  check GlobalId collisions across multiple files\n" +
+  "  --federation-manifest FILE  use a JSON discipline manifest and allowlist\n" +
   "  --help     print this message\n\n" +
   "Federation usage: moon run apps/inspect_cli -- --federation [--json] MODEL1.ifc MODEL2.ifc [...]\n" +
+  "Manifest usage: moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json [--json]\n" +
   "Federation mode reports cross-file GlobalId collisions only; use audit for per-file rules.\n\n" +
   "Without FILE, a built-in sample model is audited.\n" +
-  "Exit codes: 0 clean, 1 findings, 2 STEP parse diagnostics or read error."
+  "Exit codes: 0 clean, 1 unexpected federation findings, 2 parse, manifest, or read error."
 }
 
 ///|
@@ -106,12 +108,8 @@ fn inspect_file(file : String, view : View) -> Int {
 ///|
 /// Audit shared GlobalIds across multiple IFC sources, retaining each source's provenance.
 fn inspect_federation(files : Array[String], view : View) -> Int {
-  match view {
-    Text | Json => ()
-    Tree | SpatialTree => {
-      println("error: federation mode supports only --text or --json")
-      return 2
-    }
+  if !federation_view_supported(view) {
+    return 2
   }
   let models : Array[@model_federation.ModelSource] = []
   let mut input_errors = 0
@@ -140,7 +138,30 @@ fn inspect_federation(files : Array[String], view : View) -> Int {
       }
     }
   }
-  let report = @model_federation.audit(models)
+  emit_federation_report(models, [], view, input_errors)
+}
+
+///|
+fn federation_view_supported(view : View) -> Bool {
+  match view {
+    Text | Json => true
+    Tree | SpatialTree => {
+      println("error: federation mode supports only --text or --json")
+      false
+    }
+  }
+}
+
+///|
+fn emit_federation_report(
+  models : Array[@model_federation.ModelSource],
+  allowed_global_ids : Array[String],
+  view : View,
+  input_errors : Int,
+) -> Int {
+  let report = @model_federation.audit_with_allowlist(
+    models, allowed_global_ids,
+  )
   let output = match view {
     Text => @report_view.federation_text(report)
     Json => @report_view.federation_json(report)
@@ -149,10 +170,87 @@ fn inspect_federation(files : Array[String], view : View) -> Int {
   println(output)
   if input_errors > 0 {
     2
-  } else if report.collisions().length() > 0 {
+  } else if report.unexpected_collision_count() > 0 {
     1
   } else {
     0
+  }
+}
+
+///|
+/// Load and audit the discipline inputs named by a JSON federation manifest.
+fn inspect_federation_manifest(file : String, view : View) -> Int {
+  if !federation_view_supported(view) {
+    return 2
+  }
+  match read_source(file) {
+    Err(message) => {
+      println("error: " + message)
+      return 2
+    }
+    Ok(source) =>
+      match @model_federation.parse_manifest(source) {
+        Err(message) => {
+          println("error: invalid federation manifest: " + message)
+          return 2
+        }
+        Ok(manifest) => {
+          let models : Array[@model_federation.ModelSource] = []
+          let seen_paths : Map[String, Bool] = Map([])
+          let mut input_errors = 0
+          let manifest_dir : @path.Path = @path.Path(file).dirname()
+          for model_entry in manifest.models() {
+            let configured_path : @path.Path = @path.Path(model_entry.path())
+            let resolved_path = if configured_path.is_absolute() {
+              configured_path.normalize()
+            } else {
+              manifest_dir.join(configured_path).normalize()
+            }
+            let model_file = resolved_path.to_string()
+            if seen_paths.contains(model_file) {
+              input_errors += 1
+              println("error: duplicate model file in manifest: " + model_file)
+            } else {
+              seen_paths[model_file] = true
+              match read_source(model_file) {
+                Err(message) => {
+                  input_errors += 1
+                  println("error: " + message)
+                }
+                Ok(model_source) => {
+                  let document = @step_text.parse(model_source)
+                  let errors = document.errors()
+                  if errors.length() > 0 {
+                    input_errors += errors.length()
+                    println("STEP parse diagnostics in " + model_file + ":")
+                    for error in errors {
+                      println(
+                        "  " +
+                        error.location().to_string() +
+                        " " +
+                        error.message(),
+                      )
+                    }
+                  }
+                  models.push(
+                    @model_federation.ModelSource::new(
+                      name=model_entry.name(),
+                      discipline=model_entry.discipline(),
+                      entities=@ifc_entities.build(document),
+                    ),
+                  )
+                }
+              }
+            }
+          }
+          emit_federation_report(
+            models,
+            manifest.allowed_shared_global_ids(),
+            view,
+            input_errors,
+          )
+        }
+      }
   }
 }
 
@@ -180,6 +278,7 @@ fn user_args(args : Array[String]) -> Array[String] {
 struct Arguments {
   view : View
   federation : Bool
+  federation_manifest : Bool
   paths : Array[String]
   help : Bool
 }
@@ -188,11 +287,13 @@ struct Arguments {
 fn parse_arguments(args : Array[String]) -> Arguments {
   let mut view : View = Text
   let mut federation = false
+  let mut federation_manifest = false
   let paths : Array[String] = []
   let mut help = false
   for arg in args {
     match arg {
       "--federation" => federation = true
+      "--federation-manifest" => federation_manifest = true
       _ =>
         match parse_view(arg) {
           Some(next) => view = next
@@ -211,7 +312,7 @@ fn parse_arguments(args : Array[String]) -> Arguments {
         }
     }
   }
-  { view, federation, paths, help, }
+  { view, federation, federation_manifest, paths, help, }
 }
 
 ///|
@@ -233,6 +334,17 @@ fn main {
   let code = if args.help {
     println(usage())
     0
+  } else if args.federation && args.federation_manifest {
+    println("error: choose either --federation or --federation-manifest")
+    2
+  } else if args.federation_manifest {
+    if args.paths.length() != 1 {
+      println("error: --federation-manifest requires exactly one manifest file")
+      println(usage())
+      2
+    } else {
+      inspect_federation_manifest(args.paths[0], args.view)
+    }
   } else if args.federation {
     if federation_paths.length() < 2 {
       println("error: --federation requires at least two IFC files")

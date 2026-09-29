@@ -3,24 +3,41 @@
 pub fn federation_text(report : @model_federation.FederationReport) -> String {
   let lines : Array[String] = []
   let models = report.models()
+  let disciplines = report.disciplines()
   let collisions = report.collisions()
   lines.push("IFC models: " + report.model_count().to_string())
   lines.push("Entities: " + report.entity_count().to_string())
   lines.push(
-    "Cross-file GlobalId collisions: " + collisions.length().to_string(),
+    "Cross-file GlobalId collisions: " +
+    collisions.length().to_string() +
+    " (unexpected: " +
+    report.unexpected_collision_count().to_string() +
+    ", declared shared: " +
+    report.allowed_collision_count().to_string() +
+    ")",
   )
   lines.push("Models:")
-  for model in models {
-    lines.push("  " + model)
+  for index, model in models {
+    lines.push("  " + model_label(model, disciplines[index]))
   }
   for collision in collisions {
+    let severity = if collision.is_allowed() { "info" } else { "warning" }
+    let explanation = if collision.is_allowed() {
+      "is declared as a shared component by the federation manifest"
+    } else {
+      "is reused across files; verify whether these records represent the same component"
+    }
     lines.push(
-      "[warning] " +
+      "[" +
+      severity +
+      "] " +
       collision.code() +
       " GlobalId '" +
       collision.global_id() +
-      "' is reused across files; verify whether these records represent the same component: " +
-      collision.first_model() +
+      "' " +
+      explanation +
+      ": " +
+      model_label(collision.first_model(), collision.first_discipline()) +
       " #" +
       collision.first_entity_id().to_string() +
       " " +
@@ -28,7 +45,7 @@ pub fn federation_text(report : @model_federation.FederationReport) -> String {
       " at " +
       collision.first_location().to_string() +
       " and " +
-      collision.duplicate_model() +
+      model_label(collision.duplicate_model(), collision.duplicate_discipline()) +
       " #" +
       collision.duplicate_entity_id().to_string() +
       " " +
@@ -41,22 +58,41 @@ pub fn federation_text(report : @model_federation.FederationReport) -> String {
 }
 
 ///|
+fn model_label(name : String, discipline : String) -> String {
+  if discipline == "" {
+    name
+  } else {
+    name + " [" + discipline + "]"
+  }
+}
+
+///|
 /// Serialize a cross-file GlobalId collision report in stable JSON form.
 pub fn federation_json(report : @model_federation.FederationReport) -> String {
   let model_items : Array[String] = []
   for model in report.models() {
     model_items.push(quote(model))
   }
+  let discipline_items : Array[String] = []
+  for discipline in report.disciplines() {
+    discipline_items.push(quote(discipline))
+  }
   let collision_items : Array[String] = []
   for collision in report.collisions() {
+    let severity = if collision.is_allowed() { "info" } else { "warning" }
     collision_items.push(
       "{\"code\":" +
       quote(collision.code()) +
-      ",\"severity\":\"warning\"" +
+      ",\"severity\":" +
+      quote(severity) +
+      ",\"declared_shared\":" +
+      collision.is_allowed().to_string() +
       ",\"global_id\":" +
       quote(collision.global_id()) +
       ",\"first_model\":" +
       quote(collision.first_model()) +
+      ",\"first_discipline\":" +
+      quote(collision.first_discipline()) +
       ",\"first_entity_id\":" +
       collision.first_entity_id().to_string() +
       ",\"first_entity_type\":" +
@@ -65,6 +101,8 @@ pub fn federation_json(report : @model_federation.FederationReport) -> String {
       location_opt(Some(collision.first_location())) +
       ",\"duplicate_model\":" +
       quote(collision.duplicate_model()) +
+      ",\"duplicate_discipline\":" +
+      quote(collision.duplicate_discipline()) +
       ",\"duplicate_entity_id\":" +
       collision.duplicate_entity_id().to_string() +
       ",\"duplicate_entity_type\":" +
@@ -78,8 +116,14 @@ pub fn federation_json(report : @model_federation.FederationReport) -> String {
   report.model_count().to_string() +
   ",\"entity_count\":" +
   report.entity_count().to_string() +
+  ",\"unexpected_collision_count\":" +
+  report.unexpected_collision_count().to_string() +
+  ",\"declared_shared_count\":" +
+  report.allowed_collision_count().to_string() +
   ",\"models\":[" +
   model_items.join(",") +
+  "],\"disciplines\":[" +
+  discipline_items.join(",") +
   "],\"collision_count\":" +
   collision_items.length().to_string() +
   ",\"collisions\":[" +

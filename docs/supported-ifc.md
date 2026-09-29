@@ -22,6 +22,6 @@
 
 ## 跨文件联合检查
 
-`model_federation.audit` 接受多个带来源名称的实体集合，仅对不同输入文件间重复的非空构件 `GlobalId` 生成 `FED001` warning。当前范围仅包含已识别的 `IFCWALL`、`IFCDOOR` 和 `IFCWINDOW`；项目、空间结构及关系实体不会作为跨文件构件冲突候选。报告保留首次出现与后续出现两侧的文件名、实体编号、实体类型和源位置；相同文件内的重复值仍由单文件 `GID001` 处理。输入文件顺序和实体顺序决定稳定的首次占用者及结果顺序。比较区分大小写；未知类型不会提取 `GlobalId`。该发现提示复核，不自动断定同一 GlobalId 的记录必然是无效重复。
+`model_federation.audit` 接受多个带来源名称的实体集合，仅对不同输入文件间重复的非空构件 `GlobalId` 生成 `FED001` warning。`audit_with_allowlist` 可通过大小写敏感的精确 GlobalId 白名单，把声明允许共享的重复项标为 `FED002` info；它仍会出现在报告中，但不计入未解决冲突数。当前范围仅包含已识别的 `IFCWALL`、`IFCDOOR` 和 `IFCWINDOW`；项目、空间结构及关系实体不会作为跨文件构件冲突候选。报告保留首次出现与后续出现两侧的模型名、专业标签、实体编号、实体类型和源位置；相同文件内的重复值仍由单文件 `GID001` 处理。输入文件顺序和实体顺序决定稳定的首次占用者及结果顺序。未知类型不会提取 `GlobalId`。允许列表表示显式项目策略，不判断两个构件在几何或属性上是否相同。
 
-CLI 用法为 `--federation [--text|--json] MODEL1.ifc MODEL2.ifc [...]`。该模式只报告跨文件 GlobalId 冲突，不替代对每个文件运行 `audit`；读取失败或 STEP 解析诊断仍以退出码 `2` 标示。
+CLI 既支持 `--federation [--text|--json] MODEL1.ifc MODEL2.ifc [...]`，也支持 `--federation-manifest FILE.json`。清单包含至少两个 `models` 成员，每个成员需要唯一 `name`、`path`、`discipline`；`path` 相对于清单文件解析。可选字段 `allowed_shared_global_ids` 接受精确字符串列表。该模式只报告跨文件 GlobalId 冲突，不替代对每个文件运行 `audit`；清单错误、读取失败或 STEP 解析诊断仍以退出码 `2` 标示。示例见 `examples/federation.manifest.json`。

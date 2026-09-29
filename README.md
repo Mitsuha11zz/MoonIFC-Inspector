@@ -23,10 +23,12 @@ moon run apps/inspect_cli -- --tree examples/tiny-building.ifc     # 引用列�
 moon run apps/inspect_cli -- --spatial-tree examples/spatial-hierarchy.ifc # 空间层级树
 moon run apps/inspect_cli -- --federation examples/federation-architecture.ifc examples/federation-structure.ifc # 跨文件检查
 moon run apps/inspect_cli -- --federation --json examples/federation-architecture.ifc examples/federation-structure.ifc # JSON
+moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json # 按专业清单联合检查
+moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json --json # 清单模式 JSON
 moon run apps/inspect_cli -- --help                    # 用法说明
 ```
 
-退出码：`0` 无发现，`1` 有审计发现，`2` 存在 STEP 解析诊断或文件读取错误。联邦模式要求至少两个文件，只将不同文件间重复的已支持构件 GlobalId 报为 `FED001` warning；这是一条待复核提示，不直接判定为无效模型。每个文件内部的审计规则仍使用普通 `audit` 命令运行。文件读取依赖 `moonbitlang/x`，在 wasm-gc / wasm 下需经 `moonrun` 运行（裸 `.wasm` 在浏览器中无文件系统主机函数），js 下依赖 `node:fs`。
+退出码：`0` 无未解决发现，`1` 有未允许的跨文件冲突，`2` 存在 STEP 解析诊断、清单错误或文件读取错误。旧 `--federation` 用法仍可直接传入多个文件；清单模式则从 JSON 读取模型名、相对路径和专业标签，模型路径相对于清单文件所在目录解析。`allowed_shared_global_ids` 是大小写敏感的精确白名单：白名单中的跨文件重复项以 `FED002` info 展示但不阻断，其他重复项仍为 `FED001` warning。白名单只表示项目明确允许共享该 GlobalId，不会自动证明两侧构件语义等价。每个文件内部的审计规则仍使用普通 `audit` 命令运行。文件读取依赖 `moonbitlang/x`，在 wasm-gc / wasm 下需经 `moonrun` 运行（裸 `.wasm` 在浏览器中无文件系统主机函数），js 下依赖 `node:fs`。
 
 核心代码位于 `packages/`，应用位于 `apps/`。解析器不依赖平台 API，可用于 wasm-gc、wasm、js 和 native 目标。
 

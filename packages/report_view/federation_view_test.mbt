@@ -42,3 +42,35 @@ test "federation JSON view is stable and escapes model names" {
   )
   assert_true(json.contains("\"duplicate_model\":\"structure.ifc\""))
 }
+
+///|
+test "federation views mark manifest-approved sharing as informational" {
+  let report = @model_federation.audit_with_allowlist(
+    [
+      @model_federation.ModelSource::new(
+        name="architecture",
+        entities=@ifc_entities.build(
+          @step_text.parse("#1=IFCWALL('shared-guid');"),
+        ),
+        discipline="architectural",
+      ),
+      @model_federation.ModelSource::new(
+        name="structure",
+        entities=@ifc_entities.build(
+          @step_text.parse("#2=IFCDOOR('shared-guid');"),
+        ),
+        discipline="structural",
+      ),
+    ],
+    ["shared-guid"],
+  )
+  let text = @report_view.federation_text(report)
+  let json = @report_view.federation_json(report)
+  assert_true(text.contains("unexpected: 0, declared shared: 1"))
+  assert_true(text.contains("[info] FED002"))
+  assert_true(text.contains("architecture [architectural]"))
+  assert_true(json.contains("\"unexpected_collision_count\":0"))
+  assert_true(json.contains("\"declared_shared\":true"))
+  assert_true(json.contains("\"severity\":\"info\""))
+  assert_true(json.contains("\"duplicate_discipline\":\"structural\""))
+}

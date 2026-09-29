@@ -10,53 +10,87 @@ import {
 // Values
 pub fn audit(Array[ModelSource]) -> FederationReport
 
+pub fn audit_with_allowlist(Array[ModelSource], Array[String]) -> FederationReport
+
+pub fn parse_manifest(String) -> Result[FederationManifest, String]
+
 // Errors
 
 // Types and methods
+pub struct FederationManifest {
+  models : Array[FederationMember]
+  allowed_shared_global_ids : Array[String]
+} derive(@debug.Debug)
+pub fn FederationManifest::allowed_shared_global_ids(Self) -> Array[String]
+pub fn FederationManifest::models(Self) -> Array[FederationMember]
+pub fn FederationManifest::to_repr(Self) -> @debug.Repr
+
+pub struct FederationMember {
+  name : String
+  path : String
+  discipline : String
+} derive(@debug.Debug)
+pub fn FederationMember::discipline(Self) -> String
+pub fn FederationMember::name(Self) -> String
+pub fn FederationMember::path(Self) -> String
+pub fn FederationMember::to_repr(Self) -> @debug.Repr
+
 pub struct FederationReport {
   models : Array[String]
+  disciplines : Array[String]
   entity_count : Int
   collisions : Array[GlobalIdCollision]
 } derive(Eq, @debug.Debug)
+pub fn FederationReport::allowed_collision_count(Self) -> Int
 pub fn FederationReport::collisions(Self) -> Array[GlobalIdCollision]
+pub fn FederationReport::disciplines(Self) -> Array[String]
 pub fn FederationReport::entity_count(Self) -> Int
 pub fn FederationReport::equal(Self, Self) -> Bool
 pub fn FederationReport::model_count(Self) -> Int
 pub fn FederationReport::models(Self) -> Array[String]
 pub fn FederationReport::not_equal(Self, Self) -> Bool
 pub fn FederationReport::to_repr(Self) -> @debug.Repr
+pub fn FederationReport::unexpected_collision_count(Self) -> Int
 
 pub struct GlobalIdCollision {
   global_id : String
   first_model : String
+  first_discipline : String
   first_entity_id : Int
   first_entity_type : String
   first_location : @step_text.SourceLoc
   duplicate_model : String
+  duplicate_discipline : String
   duplicate_entity_id : Int
   duplicate_entity_type : String
   duplicate_location : @step_text.SourceLoc
+  allowed : Bool
 } derive(Eq, @debug.Debug)
 pub fn GlobalIdCollision::code(Self) -> String
+pub fn GlobalIdCollision::duplicate_discipline(Self) -> String
 pub fn GlobalIdCollision::duplicate_entity_id(Self) -> Int
 pub fn GlobalIdCollision::duplicate_entity_type(Self) -> String
 pub fn GlobalIdCollision::duplicate_location(Self) -> @step_text.SourceLoc
 pub fn GlobalIdCollision::duplicate_model(Self) -> String
 pub fn GlobalIdCollision::equal(Self, Self) -> Bool
+pub fn GlobalIdCollision::first_discipline(Self) -> String
 pub fn GlobalIdCollision::first_entity_id(Self) -> Int
 pub fn GlobalIdCollision::first_entity_type(Self) -> String
 pub fn GlobalIdCollision::first_location(Self) -> @step_text.SourceLoc
 pub fn GlobalIdCollision::first_model(Self) -> String
 pub fn GlobalIdCollision::global_id(Self) -> String
+pub fn GlobalIdCollision::is_allowed(Self) -> Bool
 pub fn GlobalIdCollision::not_equal(Self, Self) -> Bool
 pub fn GlobalIdCollision::to_repr(Self) -> @debug.Repr
 
 pub struct ModelSource {
   name : String
+  discipline : String
   entities : Array[@ifc_entities.Entity]
 } derive(@debug.Debug)
+pub fn ModelSource::discipline(Self) -> String
 pub fn ModelSource::name(Self) -> String
-pub fn ModelSource::new(name~ : String, entities~ : Array[@ifc_entities.Entity]) -> Self
+pub fn ModelSource::new(name~ : String, entities~ : Array[@ifc_entities.Entity], discipline? : String) -> Self
 pub fn ModelSource::to_repr(Self) -> @debug.Repr
 
 // Type aliases

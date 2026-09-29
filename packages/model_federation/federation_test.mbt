@@ -95,3 +95,50 @@ test "federation report exposes copies of its model and finding arrays" {
   assert_eq(report.models().length(), 2)
   assert_eq(report.collisions().length(), 1)
 }
+
+///|
+test "allowlisted shared GlobalIds are informational and retain discipline labels" {
+  let report = @model_federation.audit_with_allowlist(
+    [
+      @model_federation.ModelSource::new(
+        name="architecture",
+        entities=@ifc_entities.build(
+          @step_text.parse("#1=IFCWALL('shared-guid');"),
+        ),
+        discipline="architectural",
+      ),
+      @model_federation.ModelSource::new(
+        name="structure",
+        entities=@ifc_entities.build(
+          @step_text.parse("#2=IFCDOOR('shared-guid');"),
+        ),
+        discipline="structural",
+      ),
+    ],
+    ["shared-guid"],
+  )
+  let collisions = report.collisions()
+  assert_eq(collisions.length(), 1)
+  assert_eq(collisions[0].code(), "FED002")
+  assert_true(collisions[0].is_allowed())
+  assert_eq(collisions[0].first_discipline(), "architectural")
+  assert_eq(collisions[0].duplicate_discipline(), "structural")
+  assert_eq(report.unexpected_collision_count(), 0)
+  assert_eq(report.allowed_collision_count(), 1)
+}
+
+///|
+test "shared GlobalId allowlist comparison is exact and case-sensitive" {
+  let report = @model_federation.audit_with_allowlist(
+    [
+      model_source("architecture.ifc", "#1=IFCWALL('shared-guid');"),
+      model_source("structure.ifc", "#2=IFCDOOR('shared-guid');"),
+    ],
+    ["SHARED-GUID"],
+  )
+  let collisions = report.collisions()
+  assert_eq(collisions.length(), 1)
+  assert_eq(collisions[0].code(), "FED001")
+  assert_false(collisions[0].is_allowed())
+  assert_eq(report.unexpected_collision_count(), 1)
+}

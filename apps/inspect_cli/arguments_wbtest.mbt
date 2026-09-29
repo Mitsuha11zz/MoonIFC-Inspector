@@ -61,3 +61,12 @@ test "federation mode distinguishes report views from tree views" {
 test "federation mode deduplicates repeated path arguments in first-seen order" {
   assert_eq(unique_paths(["a.ifc", "b.ifc", "a.ifc"]), ["a.ifc", "b.ifc"])
 }
+
+///|
+test "manifest mode accepts one manifest and a report view" {
+  let args = parse_arguments(["--federation-manifest", "models.json", "--json"])
+  assert_true(args.federation_manifest)
+  assert_false(args.federation)
+  assert_true(args.view is Json)
+  assert_eq(args.paths, ["models.json"])
+}
