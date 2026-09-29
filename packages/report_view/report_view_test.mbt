@@ -39,7 +39,9 @@ test "json view emits every finding field with a lowercase severity" {
 ///|
 test "json view serializes the source location as an object" {
   let json = @report_view.json(report_of("\n  #4=IFCWALL('W',#404);"))
-  assert_true(json.contains("\"location\":{\"line\":2,\"column\":3,\"offset\":3}"))
+  assert_true(
+    json.contains("\"location\":{\"line\":2,\"column\":3,\"offset\":3}"),
+  )
 }
 
 ///|
@@ -61,7 +63,9 @@ test "text view reports statistics on the first lines" {
 
 ///|
 test "tree view lists each entity with its outgoing references" {
-  let tree = @report_view.tree(map_of("#1=IFCWALL('W',#2);\n#2=IFCPROJECT('P',());"))
+  let tree = @report_view.tree(
+    map_of("#1=IFCWALL('W',#2);\n#2=IFCPROJECT('P',());"),
+  )
   let lines = tree.split("\n").to_array()
   assert_eq(lines.length(), 2)
   assert_true(lines[0].contains("#1"))
