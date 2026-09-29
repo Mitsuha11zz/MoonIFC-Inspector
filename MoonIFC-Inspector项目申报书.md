@@ -1,40 +1,48 @@
-# MoonIFC Inspector 项目申报书
+# MoonIFC Inspector 项目申报书（初审版）
 
-## 项目名称
-MoonIFC Inspector：IFC 建筑模型结构检查工具
+## 项目基本信息
+
+- **项目名称：** MoonIFC Inspector——IFC 建筑模型结构检查工具
+- **项目方向：** MoonBit 新生态建设 / 开发者工具
+- **项目类型：** 原创项目，非移植
+- **申报人：** Mitsuha11zz
+- **联系方式：** 936163794@qq.com
+- **代码仓库：** <https://github.com/Mitsuha11zz/MoonIFC-Inspector>
+- **MoonBit 模块：** `Mitsuha11zz/moonifc_inspector`
+- **许可证：** Apache-2.0
 
 ## 项目简介
-本项目使用 MoonBit 实现 IFC STEP 文本解析、实体关系查询和结构审计，帮助开发者在模型交付或工具开发过程中发现悬空引用、重复 GlobalId 等问题，并通过报告定位相关实体。项目聚焦文本结构与引用关系，不包含完整 IFC 标准验证、几何计算或三维渲染。
 
-## 项目方向与通用性
-项目申报方向为新生态项目建设，属于 BIM 数据检查基础库与开发工具。解析、关系查询和审计能力可供 CLI、模型交付流程、导出器回归测试及 Web 模型查看器复用；核心逻辑面向 wasm、wasm-gc、js 和 native 构建。
+MoonIFC Inspector 使用 MoonBit 解析 IFC STEP 文本，建立实体引用与空间层级索引，并检查常见的模型结构问题。它希望为 BIM 模型交付、IFC 导出器回归测试和查看器开发提供轻量、可复用的检查能力。
 
-## 预期使用场景
-1. **交付前检查：** 用户指定 IFC 文件运行 CLI，查看缺失引用或重复 GlobalId 对应的实体和位置，修正模型后再次检查。无发现仅表示当前规则通过，不代表完整 IFC 合规。
-2. **导出器回归测试：** 开发者在导出工具更新后批量检查样例文件，读取 JSON 结果与退出码，发现新引入的引用错误或解析问题并阻止缺陷样例进入发布流程。
-3. **查看器关系排查：** 模型查看器调用 MoonBit API 查询实体的入向、出向引用和已支持的空间层级关系，将审计问题关联到实体列表，辅助定位导出或编辑问题。
+项目聚焦文本结构、实体引用和空间关系，不宣称完整支持 IFC/EXPRESS 标准，也不包含几何计算或三维渲染。
 
-## 拟实现的核心功能
-- 解析 STEP 文本子集，保留实体编号、属性、引用和源文件位置，并收集带位置的解析诊断。
-- 为 IFC 实体建立类型信息及引用索引，支持按编号、类型和关系查询。
-- 提供稳定排序的审计报告，规则包括 `REF001` 悬空引用、`GID001` 重复 GlobalId 和 `SPAT001` 构件空间归属检查。
-- 输出文本、JSON 和实体引用列表，并提供读取 IFC 文件的 CLI。
-- 完成浏览器 WASM Demo：选择文件、显示统计与问题列表、查看相关实体位置。
+## 当前已实现
 
-目前浏览器页面仍为文件选择占位实现；CLI 和报告测试也有待修复的问题。上述两项列为后续开发目标，不作为已完成能力。
+- 解析受控范围内的 STEP 文本，识别实体、属性、引用及源文件位置，并收集解析诊断。
+- 按实体编号和类型建立索引，支持查询实体的入向、出向引用及父子关系。
+- 提供 `REF001` 悬空引用、`GID001` 重复 GlobalId、`SPAT001` 空间归属检查。
+- 联合检查多个专业 IFC 文件，以 `FED001` 提示复核跨文件重复的构件 GlobalId，并保留两侧的文件名、实体编号、类型和源位置。
+- 输出文本、JSON、实体引用列表和空间层级树；CLI 可读取 IFC 文件并返回检查结果。
+- 核心包可面向 `wasm`、`wasm-gc`、`js` 和 `native` 构建。
 
-## 原创与参考说明
-本项目为 MoonBit 中的独立实现，不移植现有 IFC 软件代码。格式与语义依据公开的 [buildingSMART IFC4 资料](https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/)及 STEP 文件格式。
+示例：
 
-申报前检索发现 Mooncakes 已有 [`chiooo09/moonbit-ifc@0.1.3`](https://mooncakes.io/docs/chiooo09/moonbit-ifc)，涉及 IFC 解析、验证和关系处理，故本项目与其存在方向重合。本项目拟突出带实体位置与修复建议的结构审计报告及 CLI 自动化流程；差异仍需通过相同样例对比验证。若已有项目已覆盖这些需求，应优先评估协作或扩展已有项目。
+```bash
+moon run apps/inspect_cli -- spatial-tree examples/tiny-building.ifc
+moon run apps/inspect_cli -- audit examples/tiny-building.ifc --format json
+```
 
-## 项目信息
-- 申报人：Mitsuha11zz
-- 联系方式：936163794@qq.com
-- GitHub 仓库：https://github.com/Mitsuha11zz/MoonIFC-Inspector
-- MoonBit 模块：`Mitsuha11zz/moonifc_inspector`
-- 许可证：Apache-2.0
-- 类型：原创项目，非移植项目
+## 现有项目检索与重合风险
 
-## 阶段目标
-完成 CLI 文件检查与稳定 JSON 输出、接入可运行的浏览器 WASM 演示，补齐正常及异常 IFC 样例和跨目标测试，并完善安装与支持范围文档。当前四个核心包的 23 项测试在 wasm、wasm-gc、js、native 上通过；全仓检查及新增报告测试尚未全部通过，完成开发后将以 CI 结果复核。
+Mooncakes 已有 [`chiooo09/moonbit-ifc@0.1.3`](https://mooncakes.io/docs/chiooo09/moonbit-ifc)。其公开 API 已涉及 STEP 值与实体模型、源位置、空间层级、诊断/校验，也覆盖几何、属性、查询与导出等方向。因此，MoonIFC Inspector 的基础解析和结构检查与其存在明显题材及功能重合。本项目新增了显式的多文件联合检查流程，但这只是当前的差异化尝试，尚未完成同样例对比，也不能据此宣称整个题材不重合或能力优于现有方案。
+
+## 后续计划
+
+1. 将浏览器端示例完善为可加载 IFC 文件并查看结构树、统计与诊断的 WASM Demo。
+2. 根据实际样例逐步扩充 STEP/IFC 支持范围，并补充异常输入与大型模型测试。
+3. 对照公开样例评估规则覆盖度，完善使用文档和检查结果说明。
+
+## 验证情况
+
+截至 2026-09-29，本地已通过格式检查、四目标检查与构建；测试在 `wasm`、`wasm-gc`、`js`、`native` 上各通过 38 项。以上为本地验证结果，不代表 GitHub Actions 当前状态。

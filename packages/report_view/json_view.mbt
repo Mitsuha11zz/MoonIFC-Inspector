@@ -1,7 +1,12 @@
 ///|
 fn quote(value : String) -> String {
   "\"" +
-  value.replace(old="\\", new="\\\\").replace(old="\"", new="\\\"") +
+  value
+  .replace(old="\\", new="\\\\")
+  .replace(old="\"", new="\\\"")
+  .replace(old="\n", new="\\n")
+  .replace(old="\r", new="\\r")
+  .replace(old="\t", new="\\t") +
   "\""
 }
 

@@ -2,11 +2,16 @@
 package "Mitsuha11zz/moonifc_inspector/packages/report_view"
 
 import {
+  "Mitsuha11zz/moonifc_inspector/packages/model_federation",
   "Mitsuha11zz/moonifc_inspector/packages/model_rules",
   "Mitsuha11zz/moonifc_inspector/packages/relation_map",
 }
 
 // Values
+pub fn federation_json(@model_federation.FederationReport) -> String
+
+pub fn federation_text(@model_federation.FederationReport) -> String
+
 pub fn json(@model_rules.AuditReport) -> String
 
 pub fn spatial_tree(@relation_map.RelationMap) -> String

@@ -1,6 +1,6 @@
 # MoonIFC Inspector
 
-面向 WASM 的轻量 IFC 建筑模型解析、结构审计与可视化检查器。首版聚焦 IFC STEP 文本的可控子集：解析实体、构建引用关系、输出稳定的审计报告，并提供静态浏览器 Demo 外壳。
+面向 WASM 的轻量 IFC 建筑模型解析与结构检查器。除单文件审计外，项目提供跨多个专业 IFC 文件的联合检查，用于定位重复 GlobalId 并追溯两侧模型来源。
 
 ## 快速开始
 
@@ -21,10 +21,12 @@ moon run apps/inspect_cli -- examples/tiny-building.ifc            # 文本视�
 moon run apps/inspect_cli -- --json examples/broken-references.ifc # JSON 视图
 moon run apps/inspect_cli -- --tree examples/tiny-building.ifc     # 引用列表视图
 moon run apps/inspect_cli -- --spatial-tree examples/spatial-hierarchy.ifc # 空间层级树
+moon run apps/inspect_cli -- --federation examples/federation-architecture.ifc examples/federation-structure.ifc # 跨文件检查
+moon run apps/inspect_cli -- --federation --json examples/federation-architecture.ifc examples/federation-structure.ifc # JSON
 moon run apps/inspect_cli -- --help                    # 用法说明
 ```
 
-退出码：`0` 无发现，`1` 有发现，`2` 存在 STEP 解析诊断或文件读取错误。文件读取依赖 `moonbitlang/x`，在 wasm-gc / wasm 下需经 `moonrun` 运行（裸 `.wasm` 在浏览器中无文件系统主机函数），js 下依赖 `node:fs`。
+退出码：`0` 无发现，`1` 有审计发现，`2` 存在 STEP 解析诊断或文件读取错误。联邦模式要求至少两个文件，只将不同文件间重复的已支持构件 GlobalId 报为 `FED001` warning；这是一条待复核提示，不直接判定为无效模型。每个文件内部的审计规则仍使用普通 `audit` 命令运行。文件读取依赖 `moonbitlang/x`，在 wasm-gc / wasm 下需经 `moonrun` 运行（裸 `.wasm` 在浏览器中无文件系统主机函数），js 下依赖 `node:fs`。
 
 核心代码位于 `packages/`，应用位于 `apps/`。解析器不依赖平台 API，可用于 wasm-gc、wasm、js 和 native 目标。
 
@@ -36,6 +38,7 @@ moon run apps/inspect_cli -- --help                    # 用法说明
 - `text(AuditReport)`：前三行为统计信息，随后每条发现一行，格式为 `[严重级别] 规则编号 #实体编号 说明`；
 - `tree(RelationMap)`：按源文件顺序逐行输出实体编号、类型及其直接引用目标（扁平引用列表，非缩进层级树）。
 - `spatial_tree(RelationMap)`：根据已索引的聚合和空间包含关系，以两空格缩进显示项目、场地、建筑、楼层、空间和构件。根节点按实体源文件顺序、子节点按关系出现顺序输出；未知类型若参与层级关系也会保留，独立的未知实体和关系记录不作为树根。
+- `federation_text(FederationReport)` / `federation_json(FederationReport)`：输出跨 IFC 文件的重复 GlobalId、两侧文件名、实体信息和源位置。
 
 空间层级示例：
 

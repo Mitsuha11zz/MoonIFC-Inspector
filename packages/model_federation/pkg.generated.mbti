@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/packages/model_federation"
+
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/ifc_entities",
+  "Mitsuha11zz/moonifc_inspector/packages/step_text",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn audit(Array[ModelSource]) -> FederationReport
+
+// Errors
+
+// Types and methods
+pub struct FederationReport {
+  models : Array[String]
+  entity_count : Int
+  collisions : Array[GlobalIdCollision]
+} derive(Eq, @debug.Debug)
+pub fn FederationReport::collisions(Self) -> Array[GlobalIdCollision]
+pub fn FederationReport::entity_count(Self) -> Int
+pub fn FederationReport::equal(Self, Self) -> Bool
+pub fn FederationReport::model_count(Self) -> Int
+pub fn FederationReport::models(Self) -> Array[String]
+pub fn FederationReport::not_equal(Self, Self) -> Bool
+pub fn FederationReport::to_repr(Self) -> @debug.Repr
+
+pub struct GlobalIdCollision {
+  global_id : String
+  first_model : String
+  first_entity_id : Int
+  first_entity_type : String
+  first_location : @step_text.SourceLoc
+  duplicate_model : String
+  duplicate_entity_id : Int
+  duplicate_entity_type : String
+  duplicate_location : @step_text.SourceLoc
+} derive(Eq, @debug.Debug)
+pub fn GlobalIdCollision::code(Self) -> String
+pub fn GlobalIdCollision::duplicate_entity_id(Self) -> Int
+pub fn GlobalIdCollision::duplicate_entity_type(Self) -> String
+pub fn GlobalIdCollision::duplicate_location(Self) -> @step_text.SourceLoc
+pub fn GlobalIdCollision::duplicate_model(Self) -> String
+pub fn GlobalIdCollision::equal(Self, Self) -> Bool
+pub fn GlobalIdCollision::first_entity_id(Self) -> Int
+pub fn GlobalIdCollision::first_entity_type(Self) -> String
+pub fn GlobalIdCollision::first_location(Self) -> @step_text.SourceLoc
+pub fn GlobalIdCollision::first_model(Self) -> String
+pub fn GlobalIdCollision::global_id(Self) -> String
+pub fn GlobalIdCollision::not_equal(Self, Self) -> Bool
+pub fn GlobalIdCollision::to_repr(Self) -> @debug.Repr
+
+pub struct ModelSource {
+  name : String
+  entities : Array[@ifc_entities.Entity]
+} derive(@debug.Debug)
+pub fn ModelSource::name(Self) -> String
+pub fn ModelSource::new(name~ : String, entities~ : Array[@ifc_entities.Entity]) -> Self
+pub fn ModelSource::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

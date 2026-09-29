@@ -18,7 +18,10 @@ fn usage() -> String {
   "  --json     print the JSON report\n" +
   "  --tree     print the entity reference list\n" +
   "  --spatial-tree  print the indented spatial hierarchy\n" +
+  "  --federation  check GlobalId collisions across multiple files\n" +
   "  --help     print this message\n\n" +
+  "Federation usage: moon run apps/inspect_cli -- --federation [--json] MODEL1.ifc MODEL2.ifc [...]\n" +
+  "Federation mode reports cross-file GlobalId collisions only; use audit for per-file rules.\n\n" +
   "Without FILE, a built-in sample model is audited.\n" +
   "Exit codes: 0 clean, 1 findings, 2 STEP parse diagnostics or read error."
 }
@@ -101,6 +104,59 @@ fn inspect_file(file : String, view : View) -> Int {
 }
 
 ///|
+/// Audit shared GlobalIds across multiple IFC sources, retaining each source's provenance.
+fn inspect_federation(files : Array[String], view : View) -> Int {
+  match view {
+    Text | Json => ()
+    Tree | SpatialTree => {
+      println("error: federation mode supports only --text or --json")
+      return 2
+    }
+  }
+  let models : Array[@model_federation.ModelSource] = []
+  let mut input_errors = 0
+  for file in files {
+    match read_source(file) {
+      Ok(source) => {
+        let document = @step_text.parse(source)
+        let errors = document.errors()
+        if errors.length() > 0 {
+          input_errors += errors.length()
+          println("STEP parse diagnostics in " + file + ":")
+          for error in errors {
+            println("  " + error.location().to_string() + " " + error.message())
+          }
+        }
+        models.push(
+          @model_federation.ModelSource::new(
+            name=file,
+            entities=@ifc_entities.build(document),
+          ),
+        )
+      }
+      Err(message) => {
+        input_errors += 1
+        println("error: " + message)
+      }
+    }
+  }
+  let report = @model_federation.audit(models)
+  let output = match view {
+    Text => @report_view.federation_text(report)
+    Json => @report_view.federation_json(report)
+    Tree | SpatialTree => ""
+  }
+  println(output)
+  if input_errors > 0 {
+    2
+  } else if report.collisions().length() > 0 {
+    1
+  } else {
+    0
+  }
+}
+
+///|
 /// Node 参数包含运行时路径和脚本路径，跳过两个前缀。
 #cfg(target="js")
 fn user_args(args : Array[String]) -> Array[String] {
@@ -121,47 +177,83 @@ fn user_args(args : Array[String]) -> Array[String] {
 }
 
 ///|
-fn main {
-  let args = user_args(@env.args())
+struct Arguments {
+  view : View
+  federation : Bool
+  paths : Array[String]
+  help : Bool
+}
+
+///|
+fn parse_arguments(args : Array[String]) -> Arguments {
   let mut view : View = Text
-  let mut path : String? = None
+  let mut federation = false
+  let paths : Array[String] = []
   let mut help = false
   for arg in args {
-    match parse_view(arg) {
-      Some(next) => view = next
-      None =>
-        match arg {
-          "--help" => help = true
-          _ =>
-            if arg.has_prefix("--") {
-              println("unknown option: " + arg)
-              println("")
-              help = true
-            } else {
-              match path {
-                None => path = Some(arg)
-                Some(_) => {
-                  println("unexpected extra argument: " + arg)
+    match arg {
+      "--federation" => federation = true
+      _ =>
+        match parse_view(arg) {
+          Some(next) => view = next
+          None =>
+            match arg {
+              "--help" => help = true
+              _ =>
+                if arg.has_prefix("--") {
+                  println("unknown option: " + arg)
                   println("")
                   help = true
+                } else {
+                  paths.push(arg)
                 }
-              }
             }
         }
     }
   }
-  let code = if help {
+  { view, federation, paths, help, }
+}
+
+///|
+/// Keep duplicate path arguments from treating one file as two federation members.
+fn unique_paths(paths : Array[String]) -> Array[String] {
+  let unique : Array[String] = []
+  for path in paths {
+    if !unique.contains(path) {
+      unique.push(path)
+    }
+  }
+  unique
+}
+
+///|
+fn main {
+  let args = parse_arguments(user_args(@env.args()))
+  let federation_paths = unique_paths(args.paths)
+  let code = if args.help {
     println(usage())
     0
+  } else if args.federation {
+    if federation_paths.length() < 2 {
+      println("error: --federation requires at least two IFC files")
+      println(usage())
+      2
+    } else {
+      inspect_federation(federation_paths, args.view)
+    }
+  } else if args.paths.length() > 1 {
+    println("error: expected at most one IFC file outside federation mode")
+    println(usage())
+    2
   } else {
-    match path {
+    match args.paths.get(0) {
       Some(file) => {
         println("file: " + file)
-        inspect_file(file, view)
+        inspect_file(file, args.view)
       }
       None => {
         println("sample model (built-in)")
-        inspect(sample(), view)
+        inspect(sample(), args.view)
       }
     }
   }
