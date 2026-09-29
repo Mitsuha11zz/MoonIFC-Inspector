@@ -4,6 +4,9 @@ import {
   "Mitsuha11zz/moonifc_inspector/packages/relation_map",
   "Mitsuha11zz/moonifc_inspector/packages/report_view",
   "Mitsuha11zz/moonifc_inspector/packages/step_text",
+  "moonbitlang/core/env",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/sys",
 }
 
 pkgtype(kind: "executable")

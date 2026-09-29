@@ -1,14 +1,16 @@
 name: ci
 on: [push, pull_request]
 jobs:
-  step-text:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: hustcer/setup-moonbit@v1
       - run: moon version --all
-      - run: moon fmt --check packages/step_text
-      - run: moon info packages/step_text
-      - run: moon check packages/step_text --target all --deny-warn
-      - run: moon test packages/step_text --target all --deny-warn
-      - run: moon build packages/step_text --target wasm,wasm-gc,js,native
+      - run: moon fmt --check
+      - run: moon check --target all --deny-warn
+      - run: moon test --target all --deny-warn
+      - run: moon build --target wasm,wasm-gc,js,native
+      # 包接口由 pkg.generated.mbti 固化，重新生成后若产生差异说明公开 API 发生变更
+      - run: moon info
+      - run: git diff --exit-code

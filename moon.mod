@@ -11,3 +11,7 @@ keywords = [ "ifc", "step", "wasm", "building-information-modeling" ]
 preferred_target = "wasm-gc"
 
 description = "A lightweight IFC STEP inspector for structure auditing and WASM demos"
+
+import {
+  "moonbitlang/x@0.5.1",
+}
