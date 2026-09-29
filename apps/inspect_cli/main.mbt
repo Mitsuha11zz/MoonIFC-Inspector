@@ -4,6 +4,7 @@ enum View {
   Text
   Json
   Tree
+  SpatialTree
 }
 
 ///|
@@ -16,6 +17,7 @@ fn usage() -> String {
   "  --text     print the text report (default)\n" +
   "  --json     print the JSON report\n" +
   "  --tree     print the entity reference list\n" +
+  "  --spatial-tree  print the indented spatial hierarchy\n" +
   "  --help     print this message\n\n" +
   "Without FILE, a built-in sample model is audited.\n" +
   "Exit codes: 0 clean, 1 findings, 2 STEP parse diagnostics or read error."
@@ -28,6 +30,7 @@ fn parse_view(arg : String) -> View? {
     "--text" => Some(Text)
     "--json" => Some(Json)
     "--tree" => Some(Tree)
+    "--spatial-tree" => Some(SpatialTree)
     _ => None
   }
 }
@@ -49,6 +52,7 @@ fn render(
     Text => @report_view.text(report)
     Json => @report_view.json(report)
     Tree => @report_view.tree(map)
+    SpatialTree => @report_view.spatial_tree(map)
   }
 }
 
@@ -97,7 +101,18 @@ fn inspect_file(file : String, view : View) -> Int {
 }
 
 ///|
-/// 非 js 目标下 `@env.args()` 的首元素是可执行前缀，跳过它才是用户参数。
+/// Node 参数包含运行时路径和脚本路径，跳过两个前缀。
+#cfg(target="js")
+fn user_args(args : Array[String]) -> Array[String] {
+  match args {
+    [_, _, .. rest] => rest.to_owned()
+    [] | [_] => []
+  }
+}
+
+///|
+/// 其他目标下首元素是可执行前缀。
+#cfg(not(target="js"))
 fn user_args(args : Array[String]) -> Array[String] {
   match args {
     [_, .. rest] => rest.to_owned()

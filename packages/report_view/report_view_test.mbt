@@ -32,7 +32,12 @@ test "json view emits every finding field with a lowercase severity" {
     "\"entity_type\":\"IFCWALL\",\"target_id\":404," +
     "\"location\":{\"line\":1,\"column\":1,\"offset\":0}," +
     "\"message\":\"reference #404 does not exist\"," +
-    "\"suggestion\":\"add the referenced entity or correct the stale reference\"}]}",
+    "\"suggestion\":\"add the referenced entity or correct the stale reference\"}," +
+    "{\"code\":\"SPAT001\",\"severity\":\"warning\",\"entity_id\":4," +
+    "\"entity_type\":\"IFCWALL\",\"target_id\":null," +
+    "\"location\":{\"line\":1,\"column\":1,\"offset\":0}," +
+    "\"message\":\"element has no spatial ancestor in the indexed hierarchy\"," +
+    "\"suggestion\":\"add a valid spatial containment or aggregation relationship\"}]}",
   )
 }
 
@@ -46,8 +51,12 @@ test "json view serializes the source location as an object" {
 
 ///|
 test "json view escapes backslashes in string values" {
-  let escaped = @report_view.json(report_of("#1=IFCPROJECT('a\\\\b',());"))
-  assert_true(escaped.contains("\\\\"))
+  let escaped = @report_view.json(
+    report_of("#1=IFCPROJECT('a\\b');#2=IFCPROJECT('a\\b');"),
+  )
+  assert_true(
+    escaped.contains("\"message\":\"GlobalId 'a\\\\b' is already used by #1\""),
+  )
 }
 
 ///|

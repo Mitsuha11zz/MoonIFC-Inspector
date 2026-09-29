@@ -6,6 +6,8 @@
 
 `relation_map` 为实体编号、类型和双向引用建立索引；`children_of`/`parent_of` 只解释标准六属性形态的 `IFCRELAGGREGATES` 与 `IFCRELCONTAINEDINSPATIALSTRUCTURE`。子实体按关系出现顺序去重；若同一实体被多个关系指定父级，`parent_of` 返回首次出现的父级。悬空引用仍保留在查询结果中，交由后续审计规则报告。
 
+`report_view.spatial_tree` 与 CLI 的 `--spatial-tree` 按这些已索引的关系生成缩进空间树，不从普通属性引用推断层级。每个实际节点最多展开一次；循环边、共享子节点和缺失引用显示标记，无根的循环分量仍会输出。参与层级的未知实体保留，独立未知实体和关系记录不作为树根。该视图保留所有已索引的子边，第二次遇到同一个子节点时显示 `[already shown]`，不把多父关系自动修正为合法 IFC 结构。
+
 ## 当前审计规则
 
 `model_rules.audit` 当前按固定顺序运行以下规则：

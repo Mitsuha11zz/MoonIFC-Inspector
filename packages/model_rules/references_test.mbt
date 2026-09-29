@@ -6,9 +6,17 @@ fn audit_source(source : String) -> @model_rules.AuditReport {
 }
 
 ///|
+fn findings_for(
+  report : @model_rules.AuditReport,
+  code : String,
+) -> Array[@model_rules.Finding] {
+  report.findings().filter(finding => finding.code() == code)
+}
+
+///|
 test "REF001 identifies the source entity, missing target, and entity location" {
   let report = audit_source("\n  #4=IFCWALL('W',#404);")
-  let findings = report.findings()
+  let findings = findings_for(report, "REF001")
   assert_eq(findings.length(), 1)
   let finding = findings[0]
   assert_eq(finding.code(), "REF001")
@@ -27,9 +35,9 @@ test "REF001 identifies the source entity, missing target, and entity location" 
 }
 
 ///|
-test "valid forward, cyclic, and self references do not produce findings" {
+test "valid forward, cyclic, and self references do not produce REF001" {
   let report = audit_source("#1=IFCWALL(#2,#1);#2=IFCUNKNOWN(#1);")
-  assert_eq(report.findings().length(), 0)
+  assert_eq(findings_for(report, "REF001").length(), 0)
   assert_eq(report.entity_count(), 2)
   assert_eq(report.type_count(), 2)
   assert_eq(report.reference_count(), 3)
@@ -41,7 +49,9 @@ test "nested missing references are unique per entity and ordered stably" {
   let report = audit_source(source)
   assert_eq(report, audit_source(source))
   assert_eq(
-    report.findings().map(finding => (finding.entity_id(), finding.target_id())),
+    findings_for(report, "REF001").map(finding => {
+      (finding.entity_id(), finding.target_id())
+    }),
     [
       (Some(9), Some(404)),
       (Some(9), Some(405)),
@@ -55,14 +65,14 @@ test "nested missing references are unique per entity and ordered stably" {
 }
 
 ///|
-test "empty or reference free models do not trigger unrelated rules" {
+test "empty or reference free models do not trigger REF001" {
   let empty = audit_source("")
   assert_eq(empty.findings().length(), 0)
   assert_eq(empty.entity_count(), 0)
   assert_eq(empty.type_count(), 0)
   assert_eq(empty.reference_count(), 0)
   let report = audit_source("#1=IFCUNKNOWN();#2=IFCWALL('W');")
-  assert_eq(report.findings().length(), 0)
+  assert_eq(findings_for(report, "REF001").length(), 0)
   assert_eq(report.reference_count(), 0)
   assert_eq(@model_rules.Error.to_string(), "error")
   assert_eq(@model_rules.Warning.to_string(), "warning")
@@ -74,7 +84,8 @@ test "findings are copied and unknown entities retain reference auditing" {
   let report = audit_source("#8=IFCUNKNOWN(#99);#9=IFCWALL(#99);")
   let findings = report.findings()
   findings.clear()
-  assert_eq(report.findings().length(), 2)
+  assert_eq(report.findings().length(), 3)
+  assert_eq(findings_for(report, "REF001").length(), 2)
   assert_eq(report.findings()[0].entity_type(), Some("IFCUNKNOWN"))
   assert_eq(report.findings()[1].target_id(), Some(99))
 }

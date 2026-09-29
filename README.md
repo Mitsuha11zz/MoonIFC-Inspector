@@ -11,15 +11,16 @@ moon run apps/inspect_cli
 moon run apps/browser_demo
 ```
 
-实测：`moon test --target all` 在 wasm、wasm-gc、js、native 四个目标上均为 23 通过、0 失败；`moon check --target all --deny-warn` 在严格模式下通过。注意上述 23 为补齐 `report_view` 测试前的数字，需以实际输出为准。
+检查和测试覆盖 wasm、wasm-gc、js、native 四个目标，测试数量以实际运行输出为准。
 
-`apps/inspect_cli` 支持读取 `.ifc` 文件与三种视图切换：
+`apps/inspect_cli` 支持读取 `.ifc` 文件与四种视图切换：
 
 ```text
 moon run apps/inspect_cli                              # 审计内置示例模型
 moon run apps/inspect_cli -- examples/tiny-building.ifc            # 文本视图
 moon run apps/inspect_cli -- --json examples/broken-references.ifc # JSON 视图
 moon run apps/inspect_cli -- --tree examples/tiny-building.ifc     # 引用列表视图
+moon run apps/inspect_cli -- --spatial-tree examples/spatial-hierarchy.ifc # 空间层级树
 moon run apps/inspect_cli -- --help                    # 用法说明
 ```
 
@@ -34,8 +35,25 @@ moon run apps/inspect_cli -- --help                    # 用法说明
 - `json(AuditReport)`：输出实体数、类型数、引用数与发现数组。每条发现包含 `code`、`severity`、`entity_id`、`entity_type`、`target_id`、`location`（行、列、偏移量对象，缺失时为 `null`）、`message`、`suggestion`；
 - `text(AuditReport)`：前三行为统计信息，随后每条发现一行，格式为 `[严重级别] 规则编号 #实体编号 说明`；
 - `tree(RelationMap)`：按源文件顺序逐行输出实体编号、类型及其直接引用目标（扁平引用列表，非缩进层级树）。
+- `spatial_tree(RelationMap)`：根据已索引的聚合和空间包含关系，以两空格缩进显示项目、场地、建筑、楼层、空间和构件。根节点按实体源文件顺序、子节点按关系出现顺序输出；未知类型若参与层级关系也会保留，独立的未知实体和关系记录不作为树根。
 
-`report_view` 的测试见 `packages/report_view/report_view_test.mbt`。
+空间层级示例：
+
+```text
+#1 IFCPROJECT
+  #2 IFCSITE
+    #3 IFCBUILDING
+      #4 IFCBUILDINGSTOREY
+        #5 IFCSPACE
+          #6 IFCWALL
+          #7 IFCDOOR
+      #8 IFCBUILDINGSTOREY
+        #9 IFCWINDOW
+```
+
+空间树用 `[missing]` 标记缺失子节点、`[missing parent #编号]` 标记悬空父级、`[cycle]` 标记循环边、`[already shown]` 标记已展示的共享子节点。没有可用根节点的循环分量会以 `[unrooted]` 起始；父级属于不展示的关系记录时标记 `[parent outside tree #编号]`。这些标记用于阅读异常结构，不增加审计规则。普通属性中的引用不会被推断为空间父子关系。
+
+`report_view` 的测试见 `packages/report_view/report_view_test.mbt` 与 `packages/report_view/spatial_tree_test.mbt`。
 
 ## 范围
 

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/packages/report_view"
+
+import {
+  "Mitsuha11zz/moonifc_inspector/packages/model_rules",
+  "Mitsuha11zz/moonifc_inspector/packages/relation_map",
+}
+
+// Values
+pub fn json(@model_rules.AuditReport) -> String
+
+pub fn spatial_tree(@relation_map.RelationMap) -> String
+
+pub fn text(@model_rules.AuditReport) -> String
+
+pub fn tree(@relation_map.RelationMap) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
