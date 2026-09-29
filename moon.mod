@@ -4,6 +4,8 @@ version = "0.1.0"
 
 readme = "README.md"
 
+repository = "https://github.com/Mitsuha11zz/MoonIFC-Inspector"
+
 license = "Apache-2.0"
 
 keywords = [ "ifc", "step", "wasm", "building-information-modeling" ]
