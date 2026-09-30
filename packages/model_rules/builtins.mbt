@@ -30,6 +30,7 @@ pub fn audit(map : @relation_map.RelationMap) -> AuditReport {
   }
   check_duplicate_global_ids(entities, findings)
   check_spatial_placement(map, entities, findings)
+  check_spatial_hierarchy(map, entities, findings)
   {
     findings,
     entity_count: entities.length(),
