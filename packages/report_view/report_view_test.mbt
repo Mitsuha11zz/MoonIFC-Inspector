@@ -60,6 +60,15 @@ test "json view escapes backslashes in string values" {
 }
 
 ///|
+test "json view escapes every newline and control character" {
+  let json = @report_view.json(
+    report_of("#1=IFCWALL('A\nB');#2=IFCWALL('A\nB');"),
+  )
+  assert_true(json.contains("GlobalId 'A\\nB' is already used by #1"))
+  assert_true(!json.contains("GlobalId 'A\nB' is already used by #1"))
+}
+
+///|
 test "text view reports statistics on the first lines" {
   let text = @report_view.text(report_of("#4=IFCWALL('W',#404);"))
   let lines = text.split("\n").to_array()

@@ -1,8 +1,116 @@
 <!doctype html>
-<meta charset="utf-8">
-<title>MoonIFC Inspector</title>
-<style>body{font:16px system-ui;max-width:760px;margin:40px auto;padding:0 16px}pre{background:#f4f4f4;padding:16px}</style>
-<h1>MoonIFC Inspector</h1>
-<p>轻量 IFC STEP 结构审计 Demo。选择一个 <code>.ifc</code> 文件后，可在后续版本中接入 WASM 解析器。</p>
-<input type="file" accept=".ifc"><pre id="output">等待文件…</pre>
-<script>document.querySelector('input').onchange=e=>document.querySelector('#output').textContent='已选择 '+e.target.files[0].name+'；WASM 入口见 apps/browser_demo。'</script>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#e9eee7">
+    <meta name="description" content="在浏览器本地检查 IFC STEP 模型结构与引用，不上传模型文件。">
+    <title>MoonIFC Inspector — 模型结构检查</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="MoonIFC Inspector 首页">
+        <span class="brand-mark" aria-hidden="true">MI</span>
+        <span class="brand-name">MoonIFC <span>Inspector</span></span>
+      </a>
+      <div class="engine-state" aria-live="polite">
+        <span class="engine-dot" id="engine-dot"></span>
+        <span id="engine-status">正在启动 WASM 检查引擎</span>
+      </div>
+    </header>
+
+    <main id="top" class="shell">
+      <section class="intro">
+        <div class="intro-copy">
+          <p class="eyebrow"><span>IFC / STEP</span><span>模型交付前检查</span></p>
+          <h1>先把结构查清，<br><span>再交付模型。</span></h1>
+          <p class="intro-note">读取空间层级、追踪实体引用，并把问题定位回源文件。检查在本地浏览器的 MoonBit WASM 引擎中完成。</p>
+        </div>
+        <div class="intro-stamp" aria-label="文件只在本地处理">
+          <span class="stamp-icon" aria-hidden="true">↗</span>
+          <span class="stamp-overline">LOCAL REVIEW</span>
+          <strong>文件不上传</strong>
+          <span>仅在此浏览器内处理</span>
+        </div>
+      </section>
+
+      <section class="intake" aria-label="选择 IFC 文件">
+        <div class="drop-card" id="drop-card" tabindex="0" role="button" aria-label="拖入 IFC 文件或选择文件">
+          <input id="ifc-file" type="file" accept=".ifc,application/x-step" hidden>
+          <div class="drop-icon" aria-hidden="true"><span>＋</span></div>
+          <div class="drop-copy">
+            <p class="drop-title">拖入 IFC 文件，或 <label for="ifc-file" class="browse-link">浏览文件</label></p>
+            <p class="drop-hint">IFC STEP 文本 · 最大 2 MiB · 不会离开你的设备</p>
+          </div>
+          <span class="drop-arrow" aria-hidden="true">↘</span>
+        </div>
+        <div class="sample-card">
+          <div>
+            <span class="sample-kicker">QUICK START</span>
+            <strong>先试一份样例模型</strong>
+            <span class="sample-description">完整楼层结构 · 悬空引用 · 语法诊断</span>
+          </div>
+          <button id="load-sample" class="sample-button" type="button">载入样例 <span aria-hidden="true">→</span></button>
+        </div>
+        <p id="file-status" class="file-status" aria-live="polite">正在准备检查器…</p>
+      </section>
+
+      <section id="results" class="results" aria-label="检查结果" hidden>
+        <div class="result-heading">
+          <div>
+            <p class="eyebrow"><span>MODEL SNAPSHOT</span><span id="model-label">等待模型</span></p>
+            <h2 id="model-name">检查结果</h2>
+          </div>
+          <span id="model-size" class="file-size"></span>
+        </div>
+
+        <div class="stats-grid" aria-label="模型统计">
+          <article class="stat-card stat-primary"><span>实体</span><strong id="stat-entities">—</strong><small>ENTITY RECORDS</small></article>
+          <article class="stat-card"><span>类型</span><strong id="stat-types">—</strong><small>UNIQUE TYPES</small></article>
+          <article class="stat-card"><span>引用</span><strong id="stat-refs">—</strong><small>DIRECT LINKS</small></article>
+          <article class="stat-card stat-alert"><span>错误 / 警告</span><strong id="stat-findings">—</strong><small>AUDIT FINDINGS</small></article>
+        </div>
+
+        <div class="review-grid">
+          <section class="panel tree-panel" aria-labelledby="tree-title">
+            <div class="panel-heading">
+              <div><span class="panel-index">01</span><h3 id="tree-title">空间结构</h3></div>
+              <span class="panel-meta">SPATIAL HIERARCHY</span>
+            </div>
+            <p class="panel-intro">按 IFC 聚合与空间包含关系展开。悬空节点和循环边会保留标记。</p>
+            <div id="tree-list" class="tree-list"><p class="empty-state">载入 IFC 文件后，这里会显示空间结构。</p></div>
+          </section>
+
+          <section class="panel findings-panel" aria-labelledby="findings-title">
+            <div class="panel-heading">
+              <div><span class="panel-index">02</span><h3 id="findings-title">审计发现</h3></div>
+              <span id="finding-count" class="count-pill">0 条</span>
+            </div>
+            <p class="panel-intro">规则问题与解析诊断分开展示；选择一条即可查看源文件位置。</p>
+            <div id="finding-list" class="finding-list"><p class="empty-state">尚未运行检查。</p></div>
+          </section>
+        </div>
+
+        <section class="panel diagnostics-panel" aria-labelledby="diagnostics-title">
+          <div class="panel-heading">
+            <div><span class="panel-index">03</span><h3 id="diagnostics-title">STEP 解析诊断</h3></div>
+            <span id="diagnostic-count" class="count-pill count-muted">0 条</span>
+          </div>
+          <div id="diagnostic-list" class="diagnostic-list"><p class="empty-state">没有解析错误。</p></div>
+        </section>
+
+        <details id="source-panel" class="source-panel">
+          <summary><span>源文件定位</span><span id="source-location-label">点击一条发现查看上下文</span></summary>
+          <pre id="source-excerpt" class="source-excerpt"><span class="source-placeholder">选择审计发现或解析诊断后，这里会显示对应行附近的内容。</span></pre>
+        </details>
+      </section>
+
+      <footer class="footer">
+        <span>MOONIFC INSPECTOR <span class="footer-separator">/</span> STEP TEXT REVIEW</span>
+        <span>轻量结构审计，不包含几何渲染或完整 IFC 合规性证明。</span>
+      </footer>
+    </main>
+  </body>
+</html>

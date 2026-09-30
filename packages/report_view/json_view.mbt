@@ -1,13 +1,31 @@
 ///|
 fn quote(value : String) -> String {
-  "\"" +
-  value
-  .replace(old="\\", new="\\\\")
-  .replace(old="\"", new="\\\"")
-  .replace(old="\n", new="\\n")
-  .replace(old="\r", new="\\r")
-  .replace(old="\t", new="\\t") +
-  "\""
+  let builder = StringBuilder()
+  builder.write_char('"')
+  for character in value.to_array() {
+    match character {
+      '"' => builder.write_string("\\\"")
+      '\\' => builder.write_string("\\\\")
+      '\b' => builder.write_string("\\b")
+      '\f' => builder.write_string("\\f")
+      '\n' => builder.write_string("\\n")
+      '\r' => builder.write_string("\\r")
+      '\t' => builder.write_string("\\t")
+      _ => {
+        let codepoint = character.to_int()
+        if codepoint < 0x20 {
+          let digits = "0123456789abcdef".to_array()
+          builder.write_string("\\u00")
+          builder.write_char(digits[codepoint / 16])
+          builder.write_char(digits[codepoint % 16])
+        } else {
+          builder.write_char(character)
+        }
+      }
+    }
+  }
+  builder.write_char('"')
+  builder.to_string()
 }
 
 ///|

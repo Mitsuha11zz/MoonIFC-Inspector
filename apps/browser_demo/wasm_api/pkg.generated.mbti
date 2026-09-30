@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Mitsuha11zz/moonifc_inspector/apps/browser_demo/wasm_api"
+
+// Values
+pub fn inspect_ifc(String) -> String
+
+pub fn push_input_char(Int) -> Unit
+
+pub fn reset_input() -> Unit
+
+pub fn result_char(Int) -> Int
+
+pub fn result_length() -> Int
+
+pub fn run_inspection() -> Unit
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
