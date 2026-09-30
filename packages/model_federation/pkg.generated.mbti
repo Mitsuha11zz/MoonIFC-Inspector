@@ -12,11 +12,66 @@ pub fn audit(Array[ModelSource]) -> FederationReport
 
 pub fn audit_with_allowlist(Array[ModelSource], Array[String]) -> FederationReport
 
+pub fn compare_revisions(Array[ModelSource], Array[ModelSource]) -> FederationDiffReport
+
 pub fn parse_manifest(String) -> Result[FederationManifest, String]
 
 // Errors
 
 // Types and methods
+pub struct FederationChange {
+  model_name : String
+  before_discipline : String?
+  after_discipline : String?
+  global_id : String
+  kind : RevisionChangeKind
+  before_entity_id : Int?
+  after_entity_id : Int?
+  before_entity_type : String?
+  after_entity_type : String?
+  changed_arguments : Array[Int]
+  before_spatial_path : Array[String]
+  after_spatial_path : Array[String]
+  before_relationships : Array[String]
+  after_relationships : Array[String]
+  related_models : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn FederationChange::after_discipline(Self) -> String?
+pub fn FederationChange::after_entity_id(Self) -> Int?
+pub fn FederationChange::after_entity_type(Self) -> String?
+pub fn FederationChange::after_relationships(Self) -> Array[String]
+pub fn FederationChange::after_spatial_path(Self) -> Array[String]
+pub fn FederationChange::before_discipline(Self) -> String?
+pub fn FederationChange::before_entity_id(Self) -> Int?
+pub fn FederationChange::before_entity_type(Self) -> String?
+pub fn FederationChange::before_relationships(Self) -> Array[String]
+pub fn FederationChange::before_spatial_path(Self) -> Array[String]
+pub fn FederationChange::changed_arguments(Self) -> Array[Int]
+pub fn FederationChange::equal(Self, Self) -> Bool
+pub fn FederationChange::global_id(Self) -> String
+pub fn FederationChange::kind(Self) -> RevisionChangeKind
+pub fn FederationChange::model_name(Self) -> String
+pub fn FederationChange::not_equal(Self, Self) -> Bool
+pub fn FederationChange::related_models(Self) -> Array[String]
+pub fn FederationChange::to_repr(Self) -> @debug.Repr
+
+pub struct FederationDiffReport {
+  before_models : Array[String]
+  after_models : Array[String]
+  changes : Array[FederationChange]
+} derive(Eq, @debug.Debug)
+pub fn FederationDiffReport::added_count(Self) -> Int
+pub fn FederationDiffReport::after_models(Self) -> Array[String]
+pub fn FederationDiffReport::ambiguous_count(Self) -> Int
+pub fn FederationDiffReport::before_models(Self) -> Array[String]
+pub fn FederationDiffReport::change_count(Self) -> Int
+pub fn FederationDiffReport::changes(Self) -> Array[FederationChange]
+pub fn FederationDiffReport::equal(Self, Self) -> Bool
+pub fn FederationDiffReport::modified_count(Self) -> Int
+pub fn FederationDiffReport::not_equal(Self, Self) -> Bool
+pub fn FederationDiffReport::removed_count(Self) -> Int
+pub fn FederationDiffReport::to_repr(Self) -> @debug.Repr
+
 pub struct FederationManifest {
   models : Array[FederationMember]
   allowed_shared_global_ids : Array[String]
@@ -92,6 +147,17 @@ pub fn ModelSource::discipline(Self) -> String
 pub fn ModelSource::name(Self) -> String
 pub fn ModelSource::new(name~ : String, entities~ : Array[@ifc_entities.Entity], discipline? : String) -> Self
 pub fn ModelSource::to_repr(Self) -> @debug.Repr
+
+pub(all) enum RevisionChangeKind {
+  Added
+  Removed
+  Modified
+  Ambiguous
+} derive(Eq, @debug.Debug)
+pub fn RevisionChangeKind::equal(Self, Self) -> Bool
+pub fn RevisionChangeKind::label(Self) -> String
+pub fn RevisionChangeKind::not_equal(Self, Self) -> Bool
+pub fn RevisionChangeKind::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

@@ -20,12 +20,15 @@ fn usage() -> String {
   "  --spatial-tree  print the indented spatial hierarchy\n" +
   "  --federation  check GlobalId collisions across multiple files\n" +
   "  --federation-manifest FILE  use a JSON discipline manifest and allowlist\n" +
+  "  --federation-diff OLD.json NEW.json  compare two federation revisions\n" +
   "  --help     print this message\n\n" +
   "Federation usage: moon run apps/inspect_cli -- --federation [--json] MODEL1.ifc MODEL2.ifc [...]\n" +
   "Manifest usage: moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json [--json]\n" +
+  "Revision usage: moon run apps/inspect_cli -- --federation-diff examples/federation.manifest.json examples/federation-next.manifest.json [--json]\n" +
   "Federation mode reports cross-file GlobalId collisions only; use audit for per-file rules.\n\n" +
+  "Revision diff matches manifest model names and element GlobalIds; geometry is not compared.\n" +
   "Without FILE, a built-in sample model is audited.\n" +
-  "Exit codes: 0 clean, 1 unexpected federation findings, 2 parse, manifest, or read error."
+  "Exit codes: audit 0 clean / 1 finding; revision diff 0 compared / 1 duplicate GlobalId within a model; 2 input error."
 }
 
 ///|
@@ -255,6 +258,100 @@ fn inspect_federation_manifest(file : String, view : View) -> Int {
 }
 
 ///|
+/// Load all IFC models in one manifest; revision comparison fails closed on parse errors.
+fn load_federation_revision(
+  file : String,
+) -> Result[Array[@model_federation.ModelSource], String] {
+  let source = match read_source(file) {
+    Err(message) => return Err(message)
+    Ok(value) => value
+  }
+  let manifest = match @model_federation.parse_manifest(source) {
+    Err(message) => return Err("invalid federation manifest: " + message)
+    Ok(value) => value
+  }
+  let models : Array[@model_federation.ModelSource] = []
+  let seen_paths : Map[String, Bool] = Map([])
+  let manifest_dir : @path.Path = @path.Path(file).dirname()
+  for entry in manifest.models() {
+    let configured_path : @path.Path = @path.Path(entry.path())
+    let resolved_path = if configured_path.is_absolute() {
+      configured_path.normalize()
+    } else {
+      manifest_dir.join(configured_path).normalize()
+    }
+    let model_file = resolved_path.to_string()
+    if seen_paths.contains(model_file) {
+      return Err("duplicate model file in manifest: " + model_file)
+    }
+    seen_paths[model_file] = true
+    let model_source = match read_source(model_file) {
+      Err(message) => return Err(message)
+      Ok(value) => value
+    }
+    let document = @step_text.parse(model_source)
+    let parse_errors = document.errors()
+    if parse_errors.length() > 0 {
+      let details : Array[String] = []
+      for parse_error in parse_errors {
+        details.push(
+          parse_error.location().to_string() + " " + parse_error.message(),
+        )
+      }
+      return Err(
+        "STEP parse diagnostics in " + model_file + ": " + details.join("; "),
+      )
+    }
+    models.push(
+      @model_federation.ModelSource::new(
+        name=entry.name(),
+        discipline=entry.discipline(),
+        entities=@ifc_entities.build(document),
+      ),
+    )
+  }
+  Ok(models)
+}
+
+///|
+/// Compare two manifest snapshots. Element changes are informational; ambiguous IDs need review.
+fn inspect_federation_diff(
+  before_file : String,
+  after_file : String,
+  view : View,
+) -> Int {
+  if !federation_view_supported(view) {
+    return 2
+  }
+  let before = match load_federation_revision(before_file) {
+    Err(message) => {
+      println("error: baseline " + message)
+      return 2
+    }
+    Ok(models) => models
+  }
+  let after = match load_federation_revision(after_file) {
+    Err(message) => {
+      println("error: current " + message)
+      return 2
+    }
+    Ok(models) => models
+  }
+  let report = @model_federation.compare_revisions(before, after)
+  let output = match view {
+    Text => @report_view.federation_diff_text(report)
+    Json => @report_view.federation_diff_json(report)
+    Tree | SpatialTree => ""
+  }
+  println(output)
+  if report.ambiguous_count() > 0 {
+    1
+  } else {
+    0
+  }
+}
+
+///|
 /// Node 参数包含运行时路径和脚本路径，跳过两个前缀。
 #cfg(target="js")
 fn user_args(args : Array[String]) -> Array[String] {
@@ -279,6 +376,7 @@ struct Arguments {
   view : View
   federation : Bool
   federation_manifest : Bool
+  federation_diff : Bool
   paths : Array[String]
   help : Bool
 }
@@ -288,12 +386,14 @@ fn parse_arguments(args : Array[String]) -> Arguments {
   let mut view : View = Text
   let mut federation = false
   let mut federation_manifest = false
+  let mut federation_diff = false
   let paths : Array[String] = []
   let mut help = false
   for arg in args {
     match arg {
       "--federation" => federation = true
       "--federation-manifest" => federation_manifest = true
+      "--federation-diff" => federation_diff = true
       _ =>
         match parse_view(arg) {
           Some(next) => view = next
@@ -312,7 +412,7 @@ fn parse_arguments(args : Array[String]) -> Arguments {
         }
     }
   }
-  { view, federation, federation_manifest, paths, help, }
+  { view, federation, federation_manifest, federation_diff, paths, help, }
 }
 
 ///|
@@ -334,9 +434,21 @@ fn main {
   let code = if args.help {
     println(usage())
     0
-  } else if args.federation && args.federation_manifest {
-    println("error: choose either --federation or --federation-manifest")
+  } else if (args.federation && args.federation_manifest) ||
+    (args.federation && args.federation_diff) ||
+    (args.federation_manifest && args.federation_diff) {
+    println("error: choose only one federation mode")
     2
+  } else if args.federation_diff {
+    if args.paths.length() != 2 {
+      println(
+        "error: --federation-diff requires baseline and current manifest files",
+      )
+      println(usage())
+      2
+    } else {
+      inspect_federation_diff(args.paths[0], args.paths[1], args.view)
+    }
   } else if args.federation_manifest {
     if args.paths.length() != 1 {
       println("error: --federation-manifest requires exactly one manifest file")

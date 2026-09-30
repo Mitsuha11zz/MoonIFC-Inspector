@@ -70,3 +70,15 @@ test "manifest mode accepts one manifest and a report view" {
   assert_true(args.view is Json)
   assert_eq(args.paths, ["models.json"])
 }
+
+///|
+test "federation revision diff accepts two snapshots and JSON output" {
+  let args = parse_arguments([
+    "--federation-diff", "baseline.json", "current.json", "--json",
+  ])
+  assert_true(args.federation_diff)
+  assert_false(args.federation)
+  assert_false(args.federation_manifest)
+  assert_true(args.view is Json)
+  assert_eq(args.paths, ["baseline.json", "current.json"])
+}

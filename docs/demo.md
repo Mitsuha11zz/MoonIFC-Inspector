@@ -9,12 +9,16 @@ moon run apps/inspect_cli                              # 审计内置示例模�
 moon run apps/inspect_cli -- examples/tiny-building.ifc            # 文本视图（默认）
 moon run apps/inspect_cli -- --json examples/broken-references.ifc # JSON 视图
 moon run apps/inspect_cli -- --tree examples/tiny-building.ifc     # 引用列表视图
+moon run apps/inspect_cli -- --federation-diff examples/federation.manifest.json examples/federation-next.manifest.json
+moon run apps/inspect_cli -- --federation-diff examples/federation.manifest.json examples/federation-next.manifest.json --json
 moon run apps/inspect_cli -- --help                    # 用法说明
 ```
 
 `--` 之后的第一个非选项参数被视为文件路径，第二个非选项参数会报错。退出码：`0` 无发现，`1` 有发现，`2` 存在 STEP 解析诊断或文件读取错误。
 
 审计报告之外，CLI 会单独输出 STEP 解析诊断（位置与说明）。审计规则本身不合并解析错误，两者分开呈现以免畸形输入被静默忽略。
+
+联邦修订差异模式读取两份 JSON 清单，按模型名和构件 GlobalId 比较，并展示 STEP 参数位置变化、空间父级路径、直接引用关系和共享模型提示。差异本身是信息性输出并返回 `0`；同一专业模型内重复 GlobalId 会以 `ambiguous` 结果报告并返回 `1`；清单、文件读取或 STEP 解析错误返回 `2`。示例模型在修订版中改了墙名、加入入口门，并把墙放入楼层，便于观察变化及影响路径。
 
 文件读取由 `moonbitlang/x/fs` 提供，因此运行方式受目标限制：wasm-gc / wasm 下需经 `moonrun` 提供文件系统主机函数（`moon run` 即是），js 下依赖 `node:fs`。裸 `.wasm` 在浏览器中没有这些主机函数，读文件会失败。
 

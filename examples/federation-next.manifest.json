@@ -1,0 +1,17 @@
+{
+  "models": [
+    {
+      "name": "architecture",
+      "path": "federation-architecture-next.ifc",
+      "discipline": "architectural"
+    },
+    {
+      "name": "structure",
+      "path": "federation-structure.ifc",
+      "discipline": "structural"
+    }
+  ],
+  "allowed_shared_global_ids": [
+    "SHARED-COMPONENT-7"
+  ]
+}
