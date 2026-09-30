@@ -24,6 +24,39 @@ pub fn RevisionChangeKind::label(self : RevisionChangeKind) -> String {
 }
 
 ///|
+/// A related entity reached through IFC relationship records.
+///
+/// `path` alternates between entity and relationship labels, beginning at the
+/// changed entity and ending at this entity. It describes structural links,
+/// not geometric or engineering causality.
+pub struct ImpactPath {
+  entity_id : Int
+  entity_type : String
+  path : Array[String]
+} derive(Eq, Debug)
+
+///|
+pub extend ImpactPath with Eq::{not_equal, equal}
+
+///|
+pub extend ImpactPath with Debug::{to_repr}
+
+///|
+pub fn ImpactPath::entity_id(self : ImpactPath) -> Int {
+  self.entity_id
+}
+
+///|
+pub fn ImpactPath::entity_type(self : ImpactPath) -> String {
+  self.entity_type
+}
+
+///|
+pub fn ImpactPath::path(self : ImpactPath) -> Array[String] {
+  self.path.copy()
+}
+
+///|
 /// A stable-identity element change and its local relation/spatial context.
 pub struct FederationChange {
   model_name : String
@@ -40,6 +73,10 @@ pub struct FederationChange {
   after_spatial_path : Array[String]
   before_relationships : Array[String]
   after_relationships : Array[String]
+  before_impact_paths : Array[ImpactPath]
+  after_impact_paths : Array[ImpactPath]
+  before_impact_paths_truncated : Bool
+  after_impact_paths_truncated : Bool
   related_models : Array[String]
 } derive(Eq, Debug)
 
@@ -128,6 +165,34 @@ pub fn FederationChange::after_relationships(
   self : FederationChange,
 ) -> Array[String] {
   self.after_relationships.copy()
+}
+
+///|
+pub fn FederationChange::before_impact_paths(
+  self : FederationChange,
+) -> Array[ImpactPath] {
+  self.before_impact_paths.copy()
+}
+
+///|
+pub fn FederationChange::after_impact_paths(
+  self : FederationChange,
+) -> Array[ImpactPath] {
+  self.after_impact_paths.copy()
+}
+
+///|
+pub fn FederationChange::before_impact_paths_truncated(
+  self : FederationChange,
+) -> Bool {
+  self.before_impact_paths_truncated
+}
+
+///|
+pub fn FederationChange::after_impact_paths_truncated(
+  self : FederationChange,
+) -> Bool {
+  self.after_impact_paths_truncated
 }
 
 ///|
@@ -542,6 +607,15 @@ fn make_revision_change(
     Some(id) => referring_relationships(after_index.relations, id)
     None => []
   }
+  let (before_impact_paths, before_impact_paths_truncated) = match
+    before_entity {
+    Some(entity) => trace_impact_paths(before_index.relations, entity)
+    None => ([], false)
+  }
+  let (after_impact_paths, after_impact_paths_truncated) = match after_entity {
+    Some(entity) => trace_impact_paths(after_index.relations, entity)
+    None => ([], false)
+  }
   let related_models : Array[String] = []
   match related_models_by_global_id.get(global_id) {
     Some(models) =>
@@ -567,6 +641,10 @@ fn make_revision_change(
     after_spatial_path,
     before_relationships,
     after_relationships,
+    before_impact_paths,
+    after_impact_paths,
+    before_impact_paths_truncated,
+    after_impact_paths_truncated,
     related_models,
   }
 }
@@ -657,6 +735,69 @@ fn entity_label(entity : @ifc_entities.Entity) -> String {
       entity.kind() + "#" + entity.id().to_string() + " [" + global_id + "]"
     _ => entity.kind() + "#" + entity.id().to_string()
   }
+}
+
+///|
+priv struct ImpactSearchNode {
+  entity_id : Int
+  path : Array[String]
+}
+
+///|
+/// Traverse relationship records as undirected structural associations. The
+/// stable source order and a visited set make the first path deterministic and
+/// prevent cycles; the cap keeps a single change from expanding without bound.
+fn trace_impact_paths(
+  relations : @relation_map.RelationMap,
+  start : @ifc_entities.Entity,
+) -> (Array[ImpactPath], Bool) {
+  let paths : Array[ImpactPath] = []
+  let seen : Map[Int, Bool] = Map([])
+  let queue : Array[ImpactSearchNode] = [
+    { entity_id: start.id(), path: [entity_label(start)], },
+  ]
+  let path_limit = 100
+  let mut cursor = 0
+  let mut truncated = false
+  seen[start.id()] = true
+  while cursor < queue.length() && !truncated {
+    let current = queue[cursor]
+    cursor += 1
+    for relation_id in relations.incoming_references(current.entity_id) {
+      if !truncated {
+        match relations.entity_by_id(relation_id) {
+          Some(relation) if relation.category() == @ifc_entities.Relationship =>
+            for related_id in relation.references() {
+              if !truncated &&
+                related_id != current.entity_id &&
+                !seen.contains(related_id) {
+                match relations.entity_by_id(related_id) {
+                  Some(target) if target.category() == @ifc_entities.Element ||
+                    target.category() == @ifc_entities.Spatial =>
+                    if paths.length() >= path_limit {
+                      truncated = true
+                    } else {
+                      seen[related_id] = true
+                      let path = current.path.copy()
+                      path.push(entity_label(relation))
+                      path.push(entity_label(target))
+                      paths.push({
+                        entity_id: target.id(),
+                        entity_type: target.kind(),
+                        path,
+                      })
+                      queue.push({ entity_id: target.id(), path, })
+                    }
+                  _ => ()
+                }
+              }
+            }
+          _ => ()
+        }
+      }
+    }
+  }
+  (paths, truncated)
 }
 
 ///|

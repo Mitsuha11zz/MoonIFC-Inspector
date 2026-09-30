@@ -26,11 +26,13 @@
 
 `model_federation.audit` 接受多个带来源名称的实体集合，仅对不同输入文件间重复的非空构件 `GlobalId` 生成 `FED001` warning。`audit_with_allowlist` 可通过大小写敏感的精确 GlobalId 白名单，把声明允许共享的重复项标为 `FED002` info；它仍会出现在报告中，但不计入未解决冲突数。当前范围仅包含已识别的 `IFCWALL`、`IFCDOOR` 和 `IFCWINDOW`；项目、空间结构及关系实体不会作为跨文件构件冲突候选。报告保留首次出现与后续出现两侧的模型名、专业标签、实体编号、实体类型和源位置；相同文件内的重复值仍由单文件 `GID001` 处理。输入文件顺序和实体顺序决定稳定的首次占用者及结果顺序。未知类型不会提取 `GlobalId`。允许列表表示显式项目策略，不判断两个构件在几何或属性上是否相同。
 
-CLI 既支持 `--federation [--text|--json] MODEL1.ifc MODEL2.ifc [...]`，也支持 `--federation-manifest FILE.json`。清单包含至少两个 `models` 成员，每个成员需要唯一 `name`、`path`、`discipline`；`path` 相对于清单文件解析。可选字段 `allowed_shared_global_ids` 接受精确字符串列表。该模式只报告跨文件 GlobalId 冲突，不替代对每个文件运行 `audit`；清单错误、读取失败或 STEP 解析诊断仍以退出码 `2` 标示。示例见 `examples/federation.manifest.json`。
+CLI 既支持 `--federation [--text|--json] MODEL1.ifc MODEL2.ifc [...]`，也支持 `--federation-manifest FILE.json`。清单包含至少两个 `models` 成员，每个成员需要唯一 `name`、`path`、`discipline`；`path` 相对于清单文件解析。可选字段 `allowed_shared_global_ids` 接受精确字符串列表。联邦审查会为每个输入运行 `REF001`、`GID001`、`SPAT001`、`SPAT002`、`SPAT003` 单模型规则，再检查跨文件构件 GlobalId 冲突；文本输出按模型分段，JSON 将单模型报告与联邦报告封装在同一个文档中。清单错误、读取失败或 STEP 解析诊断仍以退出码 `2` 标示。示例见 `examples/federation.manifest.json`。
 
 ## 联邦修订差异范围
 
 `--federation-diff OLD.json NEW.json` 读取两份联邦清单，将同名模型视为同一专业输入，再仅对当前已识别的 `IFCWALL`、`IFCDOOR`、`IFCWINDOW` 按非空 GlobalId 配对。新增、删除、类型变化和规范化 STEP 参数变化会分别报告；在其他模型中发现相同 GlobalId 时会列出相关模型。差异报告同时给出旧/新空间父级路径，以及直接引用该构件的已识别关系实体。重复 GlobalId 会被标为 `ambiguous`，不猜测配对，退出码为 `1`。
+
+影响路径从变更构件出发，沿 `IFCRELAGGREGATES`、`IFCRELCONTAINEDINSPATIALSTRUCTURE` 和 `IFCRELDEFINESBYPROPERTIES` 的引用，在项目当前可识别的空间实体和构件之间做无向结构关联遍历；每条变更、每个快照最多返回 100 个关联实体，并按关系/引用的源文件顺序确定路径，循环和重复节点会去重。发现第 101 个关联实体时，报告会将相应的 `before_impact_paths_truncated` 或 `after_impact_paths_truncated` 标记为 `true`。路径用于帮助定位可能关联的模型对象，不代表几何影响、工程因果或需要修改的结论。
 
 此处的 `ambiguous` 专指同一专业模型文件内部重复 GlobalId；跨专业模型之间的同 ID 不视为配对歧义，而会列为相关模型提示。
 

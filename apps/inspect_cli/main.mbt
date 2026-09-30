@@ -10,7 +10,7 @@ enum View {
 ///|
 /// 命令行用法说明。
 fn usage() -> String {
-  "MoonIFC Inspector - IFC STEP structural auditor\n\n" +
+  "MoonIFC Inspector - OpenBIM federation review\n\n" +
   "USAGE:\n" +
   "  moon run apps/inspect_cli -- [OPTIONS] [FILE.ifc]\n\n" +
   "OPTIONS:\n" +
@@ -18,14 +18,14 @@ fn usage() -> String {
   "  --json     print the JSON report\n" +
   "  --tree     print the entity reference list\n" +
   "  --spatial-tree  print the indented spatial hierarchy\n" +
-  "  --federation  check GlobalId collisions across multiple files\n" +
-  "  --federation-manifest FILE  use a JSON discipline manifest and allowlist\n" +
+  "  --federation  audit each model and check cross-file coordination\n" +
+  "  --federation-manifest FILE  review discipline models and shared-ID policy\n" +
   "  --federation-diff OLD.json NEW.json  compare two federation revisions\n" +
   "  --help     print this message\n\n" +
   "Federation usage: moon run apps/inspect_cli -- --federation [--json] MODEL1.ifc MODEL2.ifc [...]\n" +
   "Manifest usage: moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json [--json]\n" +
   "Revision usage: moon run apps/inspect_cli -- --federation-diff examples/federation.manifest.json examples/federation-next.manifest.json [--json]\n" +
-  "Federation mode reports cross-file GlobalId collisions only; use audit for per-file rules.\n\n" +
+  "Federation review runs per-model structural rules and cross-file GlobalId checks together.\n\n" +
   "Revision diff matches manifest model names and element GlobalIds; geometry is not compared.\n" +
   "Without FILE, a built-in sample model is audited.\n" +
   "Exit codes: audit 0 clean / 1 finding; revision diff 0 compared / 1 duplicate GlobalId within a model; 2 input error."
@@ -109,7 +109,7 @@ fn inspect_file(file : String, view : View) -> Int {
 }
 
 ///|
-/// Audit shared GlobalIds across multiple IFC sources, retaining each source's provenance.
+/// Audit each IFC source and shared GlobalIds across the federation.
 fn inspect_federation(files : Array[String], view : View) -> Int {
   if !federation_view_supported(view) {
     return 2
@@ -162,18 +162,18 @@ fn emit_federation_report(
   view : View,
   input_errors : Int,
 ) -> Int {
-  let report = @model_federation.audit_with_allowlist(
+  let report = @model_federation.review_with_allowlist(
     models, allowed_global_ids,
   )
   let output = match view {
-    Text => @report_view.federation_text(report)
-    Json => @report_view.federation_json(report)
+    Text => @report_view.federation_review_text(report)
+    Json => @report_view.federation_review_json(report)
     Tree | SpatialTree => ""
   }
   println(output)
   if input_errors > 0 {
     2
-  } else if report.unexpected_collision_count() > 0 {
+  } else if report.has_findings() {
     1
   } else {
     0

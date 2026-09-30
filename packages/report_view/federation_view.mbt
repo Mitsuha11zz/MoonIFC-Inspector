@@ -130,3 +130,56 @@ pub fn federation_json(report : @model_federation.FederationReport) -> String {
   collision_items.join(",") +
   "]}"
 }
+
+///|
+/// Render a complete federation review, including each model's audit findings.
+pub fn federation_review_text(
+  report : @model_federation.FederationReviewReport,
+) -> String {
+  let lines : Array[String] = []
+  let audits = report.model_audits()
+  lines.push("Federation coordination review")
+  lines.push("Models: " + audits.length().to_string())
+  lines.push(
+    "Model-level findings: " + report.local_finding_count().to_string(),
+  )
+  for audit in audits {
+    lines.push("")
+    lines.push("Model: " + model_label(audit.name(), audit.discipline()))
+    lines.push(text(audit.report()))
+  }
+  lines.push("")
+  lines.push("Cross-model review:")
+  lines.push(federation_text(report.federation()))
+  lines.join("\n")
+}
+
+///|
+/// Serialize a complete federation review as one stable JSON document.
+pub fn federation_review_json(
+  report : @model_federation.FederationReviewReport,
+) -> String {
+  let audits : Array[String] = []
+  for model_audit in report.model_audits() {
+    audits.push(
+      "{\"name\":" +
+      quote(model_audit.name()) +
+      ",\"discipline\":" +
+      quote(model_audit.discipline()) +
+      ",\"audit\":" +
+      json(model_audit.report()) +
+      "}",
+    )
+  }
+  "{\"model_count\":" +
+  audits.length().to_string() +
+  ",\"local_finding_count\":" +
+  report.local_finding_count().to_string() +
+  ",\"has_findings\":" +
+  report.has_findings().to_string() +
+  ",\"model_audits\":[" +
+  audits.join(",") +
+  "],\"federation\":" +
+  federation_json(report.federation()) +
+  "}"
+}

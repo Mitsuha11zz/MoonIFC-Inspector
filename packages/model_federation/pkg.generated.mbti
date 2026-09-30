@@ -3,6 +3,7 @@ package "Mitsuha11zz/moonifc_inspector/packages/model_federation"
 
 import {
   "Mitsuha11zz/moonifc_inspector/packages/ifc_entities",
+  "Mitsuha11zz/moonifc_inspector/packages/model_rules",
   "Mitsuha11zz/moonifc_inspector/packages/step_text",
   "moonbitlang/core/debug",
 }
@@ -15,6 +16,10 @@ pub fn audit_with_allowlist(Array[ModelSource], Array[String]) -> FederationRepo
 pub fn compare_revisions(Array[ModelSource], Array[ModelSource]) -> FederationDiffReport
 
 pub fn parse_manifest(String) -> Result[FederationManifest, String]
+
+pub fn review(Array[ModelSource]) -> FederationReviewReport
+
+pub fn review_with_allowlist(Array[ModelSource], Array[String]) -> FederationReviewReport
 
 // Errors
 
@@ -34,16 +39,24 @@ pub struct FederationChange {
   after_spatial_path : Array[String]
   before_relationships : Array[String]
   after_relationships : Array[String]
+  before_impact_paths : Array[ImpactPath]
+  after_impact_paths : Array[ImpactPath]
+  before_impact_paths_truncated : Bool
+  after_impact_paths_truncated : Bool
   related_models : Array[String]
 } derive(Eq, @debug.Debug)
 pub fn FederationChange::after_discipline(Self) -> String?
 pub fn FederationChange::after_entity_id(Self) -> Int?
 pub fn FederationChange::after_entity_type(Self) -> String?
+pub fn FederationChange::after_impact_paths(Self) -> Array[ImpactPath]
+pub fn FederationChange::after_impact_paths_truncated(Self) -> Bool
 pub fn FederationChange::after_relationships(Self) -> Array[String]
 pub fn FederationChange::after_spatial_path(Self) -> Array[String]
 pub fn FederationChange::before_discipline(Self) -> String?
 pub fn FederationChange::before_entity_id(Self) -> Int?
 pub fn FederationChange::before_entity_type(Self) -> String?
+pub fn FederationChange::before_impact_paths(Self) -> Array[ImpactPath]
+pub fn FederationChange::before_impact_paths_truncated(Self) -> Bool
 pub fn FederationChange::before_relationships(Self) -> Array[String]
 pub fn FederationChange::before_spatial_path(Self) -> Array[String]
 pub fn FederationChange::changed_arguments(Self) -> Array[Int]
@@ -107,6 +120,16 @@ pub fn FederationReport::not_equal(Self, Self) -> Bool
 pub fn FederationReport::to_repr(Self) -> @debug.Repr
 pub fn FederationReport::unexpected_collision_count(Self) -> Int
 
+pub struct FederationReviewReport {
+  model_audits : Array[ModelAudit]
+  federation : FederationReport
+} derive(@debug.Debug)
+pub fn FederationReviewReport::federation(Self) -> FederationReport
+pub fn FederationReviewReport::has_findings(Self) -> Bool
+pub fn FederationReviewReport::local_finding_count(Self) -> Int
+pub fn FederationReviewReport::model_audits(Self) -> Array[ModelAudit]
+pub fn FederationReviewReport::to_repr(Self) -> @debug.Repr
+
 pub struct GlobalIdCollision {
   global_id : String
   first_model : String
@@ -137,6 +160,28 @@ pub fn GlobalIdCollision::global_id(Self) -> String
 pub fn GlobalIdCollision::is_allowed(Self) -> Bool
 pub fn GlobalIdCollision::not_equal(Self, Self) -> Bool
 pub fn GlobalIdCollision::to_repr(Self) -> @debug.Repr
+
+pub struct ImpactPath {
+  entity_id : Int
+  entity_type : String
+  path : Array[String]
+} derive(Eq, @debug.Debug)
+pub fn ImpactPath::entity_id(Self) -> Int
+pub fn ImpactPath::entity_type(Self) -> String
+pub fn ImpactPath::equal(Self, Self) -> Bool
+pub fn ImpactPath::not_equal(Self, Self) -> Bool
+pub fn ImpactPath::path(Self) -> Array[String]
+pub fn ImpactPath::to_repr(Self) -> @debug.Repr
+
+pub struct ModelAudit {
+  name : String
+  discipline : String
+  report : @model_rules.AuditReport
+} derive(@debug.Debug)
+pub fn ModelAudit::discipline(Self) -> String
+pub fn ModelAudit::name(Self) -> String
+pub fn ModelAudit::report(Self) -> @model_rules.AuditReport
+pub fn ModelAudit::to_repr(Self) -> @debug.Repr
 
 pub struct ModelSource {
   name : String

@@ -53,6 +53,109 @@ test "revision diff ignores STEP id changes and reports spatial relationship con
 }
 
 ///|
+test "revision diff traces deterministic multi-hop structural impact paths" {
+  let before = [
+    revision_model_source(
+      "architecture",
+      "architectural",
+      "#1=IFCBUILDINGSTOREY('floor');" +
+      "#2=IFCSPACE('room_a');" +
+      "#3=IFCSPACE('room_b');" +
+      "#4=IFCWALL('wall','Old Name');" +
+      "#5=IFCDOOR('door','Door Name');" +
+      "#6=IFCWALL('other_wall','Other Wall');" +
+      "#20=IFCRELAGGREGATES('building_rel',$,$,$,#1,(#2,#3));" +
+      "#21=IFCRELCONTAINEDINSPATIALSTRUCTURE('rel_a',$,$,$,(#4,#5),#2);" +
+      "#22=IFCRELCONTAINEDINSPATIALSTRUCTURE('rel_b',$,$,$,(#6),#3);",
+    ),
+  ]
+  let after = [
+    revision_model_source(
+      "architecture",
+      "architectural",
+      "#1=IFCBUILDINGSTOREY('floor');" +
+      "#2=IFCSPACE('room_a');" +
+      "#3=IFCSPACE('room_b');" +
+      "#4=IFCWALL('wall','New Name');" +
+      "#5=IFCDOOR('door','Door Name');" +
+      "#6=IFCWALL('other_wall','Other Wall');" +
+      "#20=IFCRELAGGREGATES('building_rel',$,$,$,#1,(#2,#3));" +
+      "#21=IFCRELCONTAINEDINSPATIALSTRUCTURE('rel_a',$,$,$,(#4,#5),#2);" +
+      "#22=IFCRELCONTAINEDINSPATIALSTRUCTURE('rel_b',$,$,$,(#6),#3);",
+    ),
+  ]
+  let report = @model_federation.compare_revisions(before, after)
+  assert_eq(report.change_count(), 1)
+  let change = report.changes()[0]
+  let paths = change.after_impact_paths()
+  assert_true(paths.length() >= 5)
+  assert_true(!change.after_impact_paths_truncated())
+  let mut found_remote_wall = false
+  for path in paths {
+    if path.entity_id() == 6 {
+      found_remote_wall = true
+      assert_eq(path.entity_type(), "IFCWALL")
+      assert_eq(path.path(), [
+        "IFCWALL#4 [wall]", "IFCRELCONTAINEDINSPATIALSTRUCTURE#21 [rel_a]", "IFCSPACE#2 [room_a]",
+        "IFCRELAGGREGATES#20 [building_rel]", "IFCSPACE#3 [room_b]", "IFCRELCONTAINEDINSPATIALSTRUCTURE#22 [rel_b]",
+        "IFCWALL#6 [other_wall]",
+      ])
+    }
+  }
+  assert_true(found_remote_wall)
+  assert_eq(paths, change.after_impact_paths())
+}
+
+///|
+test "revision impact paths stop at a stable limit and report truncation" {
+  let mut before_source = ""
+  let mut after_source = ""
+  let mut related_ids = ""
+  for index in 0..<102 {
+    let id = index + 1
+    let global_id = "wall_" + id.to_string()
+    let before_name = if id == 1 { "Old" } else { "Same" }
+    let after_name = if id == 1 { "New" } else { "Same" }
+    before_source = before_source +
+      "#" +
+      id.to_string() +
+      "=IFCWALL('" +
+      global_id +
+      "','" +
+      before_name +
+      "');"
+    after_source = after_source +
+      "#" +
+      id.to_string() +
+      "=IFCWALL('" +
+      global_id +
+      "','" +
+      after_name +
+      "');"
+    if index > 0 {
+      related_ids = related_ids + ","
+    }
+    related_ids = related_ids + "#" + id.to_string()
+  }
+  let relation = "#2000=IFCSPACE('room');" +
+    "#3000=IFCRELCONTAINEDINSPATIALSTRUCTURE('contains',$,$,$,(" +
+    related_ids +
+    "),#2000);"
+  before_source = before_source + relation
+  after_source = after_source + relation
+  let report = @model_federation.compare_revisions(
+    [revision_model_source("architecture", "A", before_source)],
+    [revision_model_source("architecture", "A", after_source)],
+  )
+  assert_eq(report.change_count(), 1)
+  let paths = report.changes()[0].after_impact_paths()
+  assert_eq(paths.length(), 100)
+  assert_true(report.changes()[0].after_impact_paths_truncated())
+  assert_eq(paths[0].entity_id(), 2)
+  assert_eq(paths[99].entity_id(), 101)
+}
+
+///|
 test "revision diff ignores renumbered STEP references when structure is unchanged" {
   let before = [
     revision_model_source(

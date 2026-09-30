@@ -45,6 +45,8 @@ test "federation diff JSON and text expose changes and spatial impact" {
   assert_true(json.contains("\"changed_arguments\":[2]"))
   assert_true(json.contains("IFCBUILDINGSTOREY#10 [floor]"))
   assert_true(json.contains("IFCRELCONTAINEDINSPATIALSTRUCTURE#22 [rel]"))
+  assert_true(json.contains("\"after_impact_paths\":[{"))
+  assert_true(json.contains("\"after_impact_paths_truncated\":false"))
   assert_eq(json, @report_view.federation_diff_json(report))
   let text = @report_view.federation_diff_text(report)
   assert_true(text.contains("Changes: 1 (added: 0, removed: 0, modified: 1"))
@@ -52,4 +54,10 @@ test "federation diff JSON and text expose changes and spatial impact" {
     text.contains("Before spatial path: IFCBUILDINGSTOREY#10 [floor]"),
   )
   assert_true(text.contains("After referring relationships:"))
+  assert_true(text.contains("After structural impact paths:"))
+  assert_true(
+    text.contains(
+      "IFCWALL#21 [wall] -> IFCRELCONTAINEDINSPATIALSTRUCTURE#22 [rel]",
+    ),
+  )
 }

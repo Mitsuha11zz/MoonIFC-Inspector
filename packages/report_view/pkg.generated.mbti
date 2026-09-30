@@ -14,6 +14,10 @@ pub fn federation_diff_text(@model_federation.FederationDiffReport) -> String
 
 pub fn federation_json(@model_federation.FederationReport) -> String
 
+pub fn federation_review_json(@model_federation.FederationReviewReport) -> String
+
+pub fn federation_review_text(@model_federation.FederationReviewReport) -> String
+
 pub fn federation_text(@model_federation.FederationReport) -> String
 
 pub fn json(@model_rules.AuditReport) -> String

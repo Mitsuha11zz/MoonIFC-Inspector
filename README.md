@@ -1,6 +1,6 @@
 # MoonIFC Inspector
 
-面向 WASM 的轻量 IFC 建筑模型解析与结构检查器。除单文件审计外，项目提供跨多个专业 IFC 文件的联合检查，用于定位重复 GlobalId 并追溯两侧模型来源。
+面向 OpenBIM 多专业交付的 IFC 联邦审查与修订影响分析工具。一次联邦审查会同时检查各专业模型的结构问题、跨文件 GlobalId 冲突及显式共享策略；版本比较按构件 GlobalId 识别变化，并通过已识别的 IFC 关系记录给出确定性、限量的关联实体路径。路径描述模型中的结构关联，不代表几何碰撞或工程因果。STEP 解析与单文件规则是实现这条协同审查流程的基础能力。
 
 ## 快速开始
 
@@ -21,10 +21,10 @@ moon run apps/inspect_cli -- examples/tiny-building.ifc            # 文本视�
 moon run apps/inspect_cli -- --json examples/broken-references.ifc # JSON 视图
 moon run apps/inspect_cli -- --tree examples/tiny-building.ifc     # 引用列表视图
 moon run apps/inspect_cli -- --spatial-tree examples/spatial-hierarchy.ifc # 空间层级树
-moon run apps/inspect_cli -- --federation examples/federation-architecture.ifc examples/federation-structure.ifc # 跨文件检查
-moon run apps/inspect_cli -- --federation --json examples/federation-architecture.ifc examples/federation-structure.ifc # JSON
-moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json # 按专业清单联合检查
-moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json --json # 清单模式 JSON
+moon run apps/inspect_cli -- --federation examples/federation-architecture.ifc examples/federation-structure.ifc # 单模型审计 + 跨文件审查
+moon run apps/inspect_cli -- --federation --json examples/federation-architecture.ifc examples/federation-structure.ifc # 统一 JSON
+moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json # 按专业清单联合审查
+moon run apps/inspect_cli -- --federation-manifest examples/federation.manifest.json --json # 联合审查 JSON
 moon run apps/inspect_cli -- --federation-diff examples/federation.manifest.json examples/federation-next.manifest.json # 比较联邦版本
 moon run apps/inspect_cli -- --federation-diff examples/federation.manifest.json examples/federation-next.manifest.json --json # 差异 JSON
 moon run apps/inspect_cli -- --help                    # 用法说明
@@ -39,9 +39,9 @@ python -m http.server 8000
 
 在仓库根目录启动静态服务器后打开 `http://localhost:8000/apps/browser_demo/web/`。文件只在浏览器本地处理，页面限制单文件不超过 2 MiB。完整说明见 [docs/demo.md](docs/demo.md)。
 
-退出码：普通联邦审计中 `0` 无未解决发现、`1` 有未允许的跨文件冲突、`2` 有解析/清单/读取错误；修订差异模式中 `0` 表示成功比较、`1` 表示存在重复 GlobalId 导致无法可靠配对、`2` 表示输入错误。旧 `--federation` 用法仍可直接传入多个文件；清单模式从 JSON 读取模型名、相对路径和专业标签，路径相对于清单文件解析。`allowed_shared_global_ids` 是大小写敏感的精确白名单：白名单中的跨文件重复项以 `FED002` info 展示但不阻断，其他重复项仍为 `FED001` warning。白名单只表示项目明确允许共享该 GlobalId，不会自动证明两侧构件语义等价。文件读取依赖 `moonbitlang/x`，在 wasm-gc / wasm 下需经 `moonrun` 运行（裸 `.wasm` 在浏览器中无文件系统主机函数），js 下依赖 `node:fs`。
+联邦审查的退出码：`0` 无未解决发现、`1` 存在单模型审计发现或未允许的跨文件冲突、`2` 有解析/清单/读取错误。版本差异模式中 `0` 表示成功比较、`1` 表示同一模型内重复 GlobalId 导致无法可靠配对、`2` 表示输入错误。旧 `--federation` 用法仍可直接传入多个文件；清单模式从 JSON 读取模型名、相对路径和专业标签，路径相对于清单文件解析。`allowed_shared_global_ids` 是大小写敏感的精确白名单：白名单中的跨文件重复项以 `FED002` info 展示但不阻断，其他重复项仍为 `FED001` warning。白名单只表示项目明确允许共享该 GlobalId，不会自动证明两侧构件语义等价。文件读取依赖 `moonbitlang/x`，在 wasm-gc / wasm 下需经 `moonrun` 运行（裸 `.wasm` 在浏览器中无文件系统主机函数），js 下依赖 `node:fs`。
 
-`--federation-diff OLD.json NEW.json` 按清单中的模型名配对专业模型，再按构件 GlobalId 报告新增、删除和修改；它会忽略 STEP 文件内可能重排的实体编号，并输出改变的 STEP 参数位置、空间父级路径、直接引用该构件的关系记录，以及在其他模型中出现相同 GlobalId 的提示。此功能只做结构与引用差异，不解析几何，也不声称构件几何等价。示例中的 `federation.manifest.json` 与 `federation-next.manifest.json` 可直接运行。差异模式退出码 `1` 仅表示同一专业模型内部有重复 GlobalId，跨专业模型共享同一 GlobalId 会作为相关模型提示。
+`--federation-diff OLD.json NEW.json` 按清单中的模型名配对专业模型，再按构件 GlobalId 报告新增、删除和修改；它会忽略 STEP 文件内可能重排的实体编号，并输出改变的 STEP 参数位置、空间父级路径、直接关系及沿已识别关系追踪的关联实体路径（每条变更最多 100 个实体，超限会标记截断），以及在其他模型中出现相同 GlobalId 的提示。此功能只做结构与引用差异，不解析几何，也不声称构件几何等价。示例中的 `federation.manifest.json` 与 `federation-next.manifest.json` 可直接运行。差异模式退出码 `1` 仅表示同一专业模型内部有重复 GlobalId，跨专业模型共享同一 GlobalId 会作为相关模型提示。
 
 核心代码位于 `packages/`，应用位于 `apps/`。解析器不依赖平台 API，可用于 wasm-gc、wasm、js 和 native 目标。
 
@@ -54,7 +54,8 @@ python -m http.server 8000
 - `tree(RelationMap)`：按源文件顺序逐行输出实体编号、类型及其直接引用目标（扁平引用列表，非缩进层级树）。
 - `spatial_tree(RelationMap)`：根据已索引的聚合和空间包含关系，以两空格缩进显示项目、场地、建筑、楼层、空间和构件。根节点按实体源文件顺序、子节点按关系出现顺序输出；未知类型若参与层级关系也会保留，独立的未知实体和关系记录不作为树根。
 - `federation_text(FederationReport)` / `federation_json(FederationReport)`：输出跨 IFC 文件的重复 GlobalId、两侧文件名、实体信息和源位置。
-- `federation_diff_text(FederationDiffReport)` / `federation_diff_json(FederationDiffReport)`：输出两个联邦快照的构件变化、参数位置、空间路径、直接关系影响和共享模型提示。
+- `federation_review_text(FederationReviewReport)` / `federation_review_json(FederationReviewReport)`：把每个专业模型的结构审计结果与联邦层跨文件冲突合并成一个审查结果；JSON 是单个可机读文档。
+- `federation_diff_text(FederationDiffReport)` / `federation_diff_json(FederationDiffReport)`：输出两个联邦快照的构件变化、参数位置、空间路径、直接关系及多跳结构影响路径，并提示共享模型。每条影响路径至多返回 100 个关联实体，输出顺序稳定。
 
 空间层级示例：
 

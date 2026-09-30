@@ -78,6 +78,18 @@ pub fn federation_diff_text(
         "  After referring relationships: " + after_relationships.join(", "),
       )
     }
+    append_impact_paths(
+      lines,
+      "Before",
+      change.before_impact_paths(),
+      change.before_impact_paths_truncated(),
+    )
+    append_impact_paths(
+      lines,
+      "After",
+      change.after_impact_paths(),
+      change.after_impact_paths_truncated(),
+    )
     let related_models = change.related_models()
     if related_models.length() > 0 {
       lines.push(
@@ -86,6 +98,24 @@ pub fn federation_diff_text(
     }
   }
   lines.join("\n")
+}
+
+///|
+fn append_impact_paths(
+  lines : Array[String],
+  snapshot : String,
+  paths : Array[@model_federation.ImpactPath],
+  truncated : Bool,
+) -> Unit {
+  if paths.length() > 0 || truncated {
+    lines.push("  " + snapshot + " structural impact paths:")
+    for path in paths {
+      lines.push("    " + path.path().join(" -> "))
+    }
+    if truncated {
+      lines.push("    ... output capped after 100 related entities")
+    }
+  }
 }
 
 ///|
@@ -138,6 +168,23 @@ fn json_entity_revision(entity_type : String?, entity_id : Int?) -> String {
 }
 
 ///|
+fn json_impact_paths(paths : Array[@model_federation.ImpactPath]) -> String {
+  let items : Array[String] = []
+  for path in paths {
+    items.push(
+      "{\"entity_id\":" +
+      path.entity_id().to_string() +
+      ",\"entity_type\":" +
+      quote(path.entity_type()) +
+      ",\"path\":" +
+      json_string_array(path.path()) +
+      "}",
+    )
+  }
+  "[" + items.join(",") + "]"
+}
+
+///|
 /// Serialize a federation revision diff with stable field and item ordering.
 pub fn federation_diff_json(
   report : @model_federation.FederationDiffReport,
@@ -172,6 +219,14 @@ pub fn federation_diff_json(
       json_string_array(change.before_relationships()) +
       ",\"after_relationships\":" +
       json_string_array(change.after_relationships()) +
+      ",\"before_impact_paths\":" +
+      json_impact_paths(change.before_impact_paths()) +
+      ",\"after_impact_paths\":" +
+      json_impact_paths(change.after_impact_paths()) +
+      ",\"before_impact_paths_truncated\":" +
+      change.before_impact_paths_truncated().to_string() +
+      ",\"after_impact_paths_truncated\":" +
+      change.after_impact_paths_truncated().to_string() +
       ",\"related_models\":" +
       json_string_array(change.related_models()) +
       "}",

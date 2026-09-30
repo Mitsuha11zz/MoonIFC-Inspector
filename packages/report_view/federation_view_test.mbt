@@ -74,3 +74,48 @@ test "federation views mark manifest-approved sharing as informational" {
   assert_true(json.contains("\"severity\":\"info\""))
   assert_true(json.contains("\"duplicate_discipline\":\"structural\""))
 }
+
+///|
+fn federation_review_for_view() -> @model_federation.FederationReviewReport {
+  let architecture = @ifc_entities.build(
+    @step_text.parse("#1=IFCWALL('shared',#404);"),
+  )
+  let structure = @ifc_entities.build(@step_text.parse("#2=IFCDOOR('shared');"))
+  @model_federation.review([
+    @model_federation.ModelSource::new(
+      name="architecture",
+      discipline="architectural",
+      entities=architecture,
+    ),
+    @model_federation.ModelSource::new(
+      name="structure",
+      discipline="structural",
+      entities=structure,
+    ),
+  ])
+}
+
+///|
+test "federation review text combines local audits and coordination findings" {
+  let rendered = @report_view.federation_review_text(
+    federation_review_for_view(),
+  )
+  assert_true(rendered.contains("Federation coordination review"))
+  assert_true(rendered.contains("Model: architecture [architectural]"))
+  assert_true(rendered.contains("[error] REF001"))
+  assert_true(rendered.contains("Cross-model review:"))
+  assert_true(rendered.contains("[warning] FED001"))
+}
+
+///|
+test "federation review JSON is one nested document with both audit layers" {
+  let rendered = @report_view.federation_review_json(
+    federation_review_for_view(),
+  )
+  assert_true(rendered.contains("\"model_audits\":["))
+  assert_true(rendered.contains("\"name\":\"architecture\""))
+  assert_true(rendered.contains("\"code\":\"REF001\""))
+  assert_true(rendered.contains("\"federation\":{"))
+  assert_true(rendered.contains("\"code\":\"FED001\""))
+  assert_true(rendered.has_suffix("}"))
+}
